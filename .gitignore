@@ -3,3 +3,4 @@
 .vscode
 build
 src/js/keys.js
+src/js/test.js
