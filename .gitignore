@@ -2,4 +2,4 @@
 .lock*
 .vscode
 build
-js/keys.js
+src/js/keys.js
