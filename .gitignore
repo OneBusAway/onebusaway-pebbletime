@@ -1,0 +1,5 @@
+.env
+.lock*
+.vscode
+build
+js/keys.js
