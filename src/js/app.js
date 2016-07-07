@@ -7,12 +7,10 @@ var keys = require('./keys');
 var OBA_API_KEY = keys.PUGET_SOUND;
 
 // import test data
-// TODO: don't make this a 'require' - find a better way to do test 'hooks'
+// TODO: don't make this a 'require' find a better way to do test 'hooks'
 var test = require('./test');
 var test_lat = test.lat;
 var test_lon = test.lon;
-
-console.log("lat " + test_lat + " lon " + test_lon);
 
 var DIALOG_GPS_ERROR = 
     "Location Error.\n\nCheck phone GPS settings & signal.";
