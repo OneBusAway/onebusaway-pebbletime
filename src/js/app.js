@@ -1,6 +1,18 @@
-/** This code expects OBA_API_KEY to be defined which contains an
+/** This code expects PUGET_SOUND to be defined in keys.js which contains an
   *  API key for the Puget Sound OBA API 
 */
+
+// import API keys
+var keys = require('./keys');
+var OBA_API_KEY = keys.PUGET_SOUND;
+
+// import test data
+// TODO: don't make this a 'require' - find a better way to do test 'hooks'
+var test = require('./test');
+var test_lat = test.lat;
+var test_lon = test.lon;
+
+console.log("lat " + test_lat + " lon " + test_lon);
 
 var DIALOG_GPS_ERROR = 
     "Location Error.\n\nCheck phone GPS settings & signal.";
@@ -526,7 +538,7 @@ function getLocationSuccess(attempts, pos) {
     var lon = pos.coords.longitude;
 
     // test code: set gps coords
-    if("test_lat" in window && "test_lon" in window) {
+    if(typeof test_lat !== 'undefined' && typeof test_lon !== 'undefined') {
       lat = test_lat;
       lon = test_lon;
     }
@@ -569,7 +581,7 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
   var lon = pos.coords.longitude;
 
   // test code
-  if("test_lat" in window && "test_lon" in window) {
+  if(typeof test_lat !== 'undefined' && typeof test_lon !== 'undefined') {
     lat = test_lat;
     lon = test_lon;
   }
