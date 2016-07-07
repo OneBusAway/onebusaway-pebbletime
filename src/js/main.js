@@ -1,25 +1,24 @@
-// This code expects OBA_API_KEY to be defined which contains an
-// API key for the Puget Sound OBA API 
+/** This code expects OBA_API_KEY to be defined which contains an
+  *  API key for the Puget Sound OBA API 
+*/
 
 var DIALOG_GPS_ERROR = 
     "Location Error.\n\nCheck phone GPS settings & signal.";
 var DIALOG_INTERNET_ERROR = 
     "Connection failure.\n\nCheck phone internet connection.";
-
 var GPS_TIMEOUT = 15000;
 var GPS_MAX_AGE = 60000;
-
-var currentTransaction = -1;
-var maxTriesForSendingAppMessage = 7;
-var timeoutForAppMessageRetry = 2000;
-var maxTriesForHTTPRequest = 7;
-var timeoutForHTTPRetry = 2000;
-var timeoutForHTTPRequest = 7500;
-var maxStops = 50;
+var APP_MESSAGE_MAX_ATTEMPTS = 7;
+var APP_MESSAGE_TIMEOUT = 2000;
+var HTTP_MAX_ATTEMPTS = 7;
+var HTTP_RETRY_TIMEOUT = 2000;
+var HTTP_REQUEST_TIMEOUT = 7500;
+var MAX_STOPS = 50;
 
 var arrivalsJsonCache = {};
+var currentTransaction = -1;
 
-// Convert a decimal value to a C-compatible 'double' byte array
+/** Convert a decimal value to a C-compatible 'double' byte array */
 function DecimalToDoubleByteArray(value) { 
   var buffer = new ArrayBuffer(8);
   var floatArray = new Float64Array(buffer);
@@ -40,12 +39,12 @@ function randomIntFromInterval(min,max) {
   return Math.floor(Math.random()*(max-min+1)+min);
 }
 
-// send an AppMessage dictionary to the watch 
+/** Send an AppMessage dictionary to the watch */
 function sendAppMessage(dictionary, successFunction) {
   var attempts = 0;
 
   function send() {
-    if(attempts < maxTriesForSendingAppMessage) {
+    if(attempts < APP_MESSAGE_MAX_ATTEMPTS) {
   		// Send to Pebble
   		Pebble.sendAppMessage(dictionary,
   			function(e) {
@@ -55,7 +54,7 @@ function sendAppMessage(dictionary, successFunction) {
   			  console.log('sendAppMessage: Error @ attempt: ' + attempts);
           attempts += 1;
           setTimeout(function() { send(); },
-            randomIntFromInterval(0, timeoutForAppMessageRetry*attempts));
+            randomIntFromInterval(0, APP_MESSAGE_TIMEOUT*attempts));
   			}
   		);
     }
@@ -68,7 +67,7 @@ function sendAppMessage(dictionary, successFunction) {
   send();
 }
 
-// trigger an error  message on the watch
+/** Trigger an error message on the watch */
 function sendError(message) {
   // data to send back to watch
   var dictionary = {
@@ -85,16 +84,16 @@ function sendError(message) {
   sendAppMessage(dictionary, function() { });
 }
 
-// web request with backoff and retry
+/** Web request with backoff and retry */
 function xhrRequest(url, type, callback) {
   var attempts = 0;
 
   function xhrRequestRetry() {
     attempts += 1;
-    if(attempts < maxTriesForHTTPRequest) {
+    if(attempts < HTTP_MAX_ATTEMPTS) {
       setTimeout(function() {
         xhrRequestDo(); }, 
-        randomIntFromInterval(0, timeoutForHTTPRetry*attempts));
+        randomIntFromInterval(0, HTTP_RETRY_TIMEOUT*attempts));
     }
     else {
       console.log('xhrRequest: Failed after ' + attempts + 
@@ -106,7 +105,7 @@ function xhrRequest(url, type, callback) {
   function xhrRequestDo() {
     // console.log('xhrRequest: starting ' + url);
     var xhr = new XMLHttpRequest();
-    xhr.timeout = timeoutForHTTPRequest*(attempts+1);
+    xhr.timeout = HTTP_REQUEST_TIMEOUT*(attempts+1);
     xhr.onload = function () {
       if(this.status == 200) {
         //console.log('xhrRequest: success 200');
@@ -140,6 +139,10 @@ function millisToMinutesAndSeconds(millis) {
   return sign(millis) + minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 }
 
+/** 
+ * Convert milliseconds into human readable time, subsituting 'Now' for
+ * times below |1 min|
+ */
 function millisToMinutesAndSecondsOBA(millis) {
   var m = Math.abs(millis);
   var minutes = Math.floor(m / 60000);
@@ -152,6 +155,11 @@ function millisToMinutesAndSecondsOBA(millis) {
   }
 }
 
+/** 
+ * Sends bus arrival information from 'arrivals' for the 'bus' to the watch, 
+ * one arrival at a time. When the current arrivals have been exhausted, 
+ * starts the process of getting the arrivals fort he next bus in 'busArray'
+ */
 function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
   var stopId = bus.stopId;
   var routeId = bus.routeId;
@@ -255,6 +263,10 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
   }
 }
 
+/**
+ * Parse json 'responseText' from the arrivals OBA call for 'bus' and
+ * trigger the sending of the arrivals info to the watch
+ */
 function processArrivalsResponse(bus, busArray, transactionId, responseText) {
   // responseText contains a JSON object
   var json = JSON.parse(responseText);
@@ -274,6 +286,12 @@ function processArrivalsResponse(bus, busArray, transactionId, responseText) {
   }
 }
 
+/**
+ * for each bus in the 'busArray' get the bus' arrivals at it's stop and send
+ * them back to the watch - since this can result in multiple calls to get
+ * arrivals and departures data for the same stop from OBA, the results
+ * are cached for each transaction with the watch
+ */
 function getArrivals(busArray, transactionId) {
 	var bus = busArray.shift();
   
@@ -298,6 +316,11 @@ function getArrivals(busArray, transactionId) {
   }
 }
 
+
+/** 
+ * build an array of route & stop pairs representing a bus from the 
+ * delimited list sent from the watch
+ */
 function parseBusList(busList) {
   // parse out the bus list (tabs separate "stopId,routeId" pairs)
   var busPairs = busList.split("\t");
@@ -313,10 +336,10 @@ function parseBusList(busList) {
   return busArray;  
 }
 
+/**
+ * send a message signifying the end of get routes or get stops transaction
+ */
 function sendEndOfStopsRoutes(transactionId, messageType) {
-  // the watch is waiting for an end-of-routes signal before it shows the
-  // stops & routes settnigs page. This sends that signal.
-  // data to send back to watch
   var dictionary = {
     'AppMessage_routeId': 0,
     'AppMessage_routeName': '',
@@ -334,6 +357,9 @@ function sendEndOfStopsRoutes(transactionId, messageType) {
   );
 }
 
+/**
+ * Send the list of nearby routes as requested by the watch settings menu
+ */
 function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
   console.log("#routes: " + routes.length);
 
@@ -380,6 +406,9 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
   }
 }
 
+/**
+ * Send the list of nearby stops as requested by the watch settings menu
+ */
 function sendStopsToPebble(stops, 
                            routes, 
                            stopStrings, 
@@ -431,6 +460,9 @@ function sendStopsToPebble(stops,
   }
 }
 
+/**
+ * return an index of routes per stop from OBA nearby stops json
+ */
 function buildStopRouteStrings(json) {
 	var routes = json.data.references.routes;
 
@@ -461,6 +493,9 @@ function buildStopRouteStrings(json) {
 	return stringTable;
 }
 
+/**
+ * return an index of stops per route from OBA nearby stops json
+ */
 function buildRouteStopStrings(json) {
 	var stringTable = {};
 
@@ -482,8 +517,11 @@ function buildRouteStopStrings(json) {
 	return stringTable;
 }
 
+/**
+ * sends the current GPS coordinates to the watch
+ */
 function getLocationSuccess(attempts, pos) {
-  if(attempts < maxTriesForSendingAppMessage) {
+  if(attempts < APP_MESSAGE_MAX_ATTEMPTS) {
     var lat = pos.coords.latitude;
     var lon = pos.coords.longitude;
 
@@ -513,7 +551,7 @@ function getLocationSuccess(attempts, pos) {
         attempts += 1;
         setTimeout(function() {
           getLocationSuccess(attempts, pos);
-          }, timeoutForAppMessageRetry*attempts);
+          }, APP_MESSAGE_TIMEOUT*attempts);
       }
     );
   }
@@ -522,6 +560,10 @@ function getLocationSuccess(attempts, pos) {
   }
 }
 
+/**
+ * requests the bus stops near the current GPS coordinates and sends the
+ * stops and routes to the watch
+ */
 function getNearbyStopsLocationSuccess(pos, transactionId) {
   var lat = pos.coords.latitude;
   var lon = pos.coords.longitude;
@@ -550,10 +592,10 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
 
       // TODO: trim stops to max length to prevent out of memory errors on the
       // watch; or, better solution, paginate the results
-      if(stops.length > maxStops) {
-        var diff = stops.length - maxStops;
+      if(stops.length > MAX_STOPS) {
+        var diff = stops.length - MAX_STOPS;
         console.log("---WARNING--- cutting stop length from " + stops.length +
-          " to " + maxStops);
+          " to " + MAX_STOPS);
         stops.splice((-1)*diff, diff);
       }
 
@@ -564,6 +606,9 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
  	);
 }
 
+/**
+ * requests the routes for a particular stop and sends the routes to the watch
+ */
 function getRoutesForStop(stopId, transactionId) {
 	var url = 'http://api.pugetsound.onebusaway.org/api/where/stop/' + stopId +
     '.json?key=' + OBA_API_KEY;
@@ -587,6 +632,9 @@ function getRoutesForStop(stopId, transactionId) {
  	);
 }
 
+/** 
+ * gets the current GPS location, sends lat/long to the watch
+ */
 function getLocation() {
   navigator.geolocation.getCurrentPosition(
     	function(pos) {
@@ -600,6 +648,10 @@ function getLocation() {
   );
 }
 
+/**
+ * gets the nearby OBA stops based on the current location and sends the 
+ * results to the watch
+ */
 function getNearbyStops(transactionId) {
 	navigator.geolocation.getCurrentPosition(
     	function(pos) {
@@ -613,7 +665,10 @@ function getNearbyStops(transactionId) {
   );
 }
 
-// Listen for when the watch app is open and ready
+/** 
+ * Listen for when the watch app is open and ready, triggers a location update
+ * when data can be sent to the watch
+ */
 Pebble.addEventListener('ready',
   function(e) {
     console.log('PebbleKit JS ready!');
@@ -623,7 +678,10 @@ Pebble.addEventListener('ready',
   }
 );
 
-// Listen for when an AppMessage is received
+/** 
+ * Listen for when an AppMessage is received and start the corresponding
+ * transaction
+ */
 Pebble.addEventListener('appmessage',
   function(e) {
 	// console.log('AppMessage received: ' + JSON.stringify(e.payload));
