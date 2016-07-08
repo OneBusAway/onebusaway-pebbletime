@@ -9,8 +9,6 @@
 #include "error_window.h"
 #include "utility.h"
 
-static AppData s_appdata;
-
 static void BluetoothCallback(bool connected) {
   if(connected) {
     ErrorWindowRemove();
@@ -20,18 +18,18 @@ static void BluetoothCallback(bool connected) {
   }
 }
 
-static void HandleInit(void) {
+static void HandleInit(AppData* appdata) {
   // Upgrade persistence (as needed)
   PersistenceVersionControl();
   
   // Initialize app data
-  s_appdata.initialized = false;
-  s_appdata.show_settings = true;
-  ArrivalsInit(&s_appdata.arrivals);
-  LoadBusesFromPersistence(&s_appdata.buses);
+  appdata->initialized = false;
+  appdata->show_settings = true;
+  ArrivalsInit(&appdata->arrivals);
+  LoadBusesFromPersistence(&appdata->buses);
 
   // Initialize app message communication
-  CommunicationInit(&s_appdata);
+  CommunicationInit(appdata);
   
   // Register for Bluetooth connection updates
   connection_service_subscribe((ConnectionHandlers) {
@@ -42,15 +40,15 @@ static void HandleInit(void) {
   // Initialize windows
   SettingsStopsInit();
   SettingsRoutesInit();
-  MainWindowInit(&s_appdata);
+  MainWindowInit(appdata);
 }
 
-static void HandleDeinit(void) {
+static void HandleDeinit(AppData* appdata) {
   SettingsRoutesDeinit();
   SettingsStopsDeinit();
-  FreeAndClearPointer((void**)&s_appdata.buses.data);
-  FreeAndClearPointer((void**)&s_appdata.buses.filter_index);
-  ArrivalsDestructor(&s_appdata.arrivals);
+  FreeAndClearPointer((void**)&appdata->buses.data);
+  FreeAndClearPointer((void**)&appdata->buses.filter_index);
+  ArrivalsDestructor(&appdata->arrivals);
   CommunicationDeinit();
   MainWindowDeinit();
 }
@@ -61,7 +59,8 @@ void AppExit() {
 }
 
 int main(void) {
-  HandleInit();
+  AppData appdata;
+  HandleInit(&appdata);
   app_event_loop();
-  HandleDeinit();
+  HandleDeinit(&appdata);
 }

@@ -161,7 +161,7 @@ const char* ArrivalText(const Arrival a) {
       break;
     case 's':
     default:
-      return "Scheduled Time";
+      return "Scheduled time";
   }
 }
 

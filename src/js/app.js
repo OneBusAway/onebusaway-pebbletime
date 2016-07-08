@@ -55,18 +55,18 @@ function sendAppMessage(dictionary, successFunction) {
 
   function send() {
     if(attempts < APP_MESSAGE_MAX_ATTEMPTS) {
-  		// Send to Pebble
-  		Pebble.sendAppMessage(dictionary,
-  			function(e) {
-  				successFunction();
-  			},
-  			function(e) {
-  			  console.log('sendAppMessage: Error @ attempt: ' + attempts);
+      // Send to Pebble
+      Pebble.sendAppMessage(dictionary,
+        function(e) {
+          successFunction();
+        },
+        function(e) {
+          console.log('sendAppMessage: Error @ attempt: ' + attempts);
           attempts += 1;
           setTimeout(function() { send(); },
             randomIntFromInterval(0, APP_MESSAGE_TIMEOUT*attempts));
-  			}
-  		);
+        }
+      );
     }
     else {
       console.log("sendAppMessage: Failed sending AppMessage. Bailing." +
@@ -303,7 +303,7 @@ function processArrivalsResponse(bus, busArray, transactionId, responseText) {
  * are cached for each transaction with the watch
  */
 function getArrivals(busArray, transactionId) {
-	var bus = busArray.shift();
+  var bus = busArray.shift();
   
   if(bus) {
     var stopId = bus.stopId;
@@ -373,34 +373,34 @@ function sendEndOfStopsRoutes(transactionId, messageType) {
 function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
   console.log("#routes: " + routes.length);
 
-	if((routes.length === 0) || (transactionId != currentTransaction)) {
+  if((routes.length === 0) || (transactionId != currentTransaction)) {
     // completed sending routes to the pebble, or the transaction
     // was canceled
-		// console.log("sendRoutesToPebble We're done here...");
+    // console.log("sendRoutesToPebble We're done here...");
     sendEndOfStopsRoutes(transactionId, messageType);
-		return;
-	}
+    return;
+  }
 
   // pull the next route
-	var route = routes.shift();
+  var route = routes.shift();
 
-	if(route.id) {
-		var name = route.shortName ? route.shortName : route.longName;
+  if(route.id) {
+    var name = route.shortName ? route.shortName : route.longName;
     name = name.toUpperCase();
     name = name ? name : 'Unknown';
 
-		// data to send back to watch
+    // data to send back to watch
     var dictionary = {
-			'AppMessage_routeId': route.id,
-			'AppMessage_routeName': name,
-			'AppMessage_itemsRemaining': 1, // positive int == not done
-			'AppMessage_stopIdList': stopStrings[route.id],
+      'AppMessage_routeId': route.id,
+      'AppMessage_routeName': name,
+      'AppMessage_itemsRemaining': 1, // positive int == not done
+      'AppMessage_stopIdList': stopStrings[route.id],
       'AppMessage_description': route.description,
       'AppMessage_transactionId': transactionId,
-			'AppMessage_messageType': messageType // nearby routes or routes for stop
-		};
+      'AppMessage_messageType': messageType // nearby routes or routes for stop
+    };
 
-		console.log('sendRoutesToPebble: sending - ' + route.id + ',' + name + ',' +
+    console.log('sendRoutesToPebble: sending - ' + route.id + ',' + name + ',' +
                 stopStrings[route.id] + ',' + route.description);
 
     sendAppMessage(dictionary,
@@ -408,7 +408,7 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
         sendRoutesToPebble(routes, stopStrings, transactionId, messageType);
       }
     );
-	}
+  }
   else {
     console.log('sendRoutesToPebble: missing route id in JSON. transactionId: ' +
                 transactionId);
@@ -425,45 +425,45 @@ function sendStopsToPebble(stops,
                            routeStrings,
                            transactionId) {
 
-	if((stops.length === 0) || (transactionId != currentTransaction)) {
+  if((stops.length === 0) || (transactionId != currentTransaction)) {
     // completed sending stops to the pebble; now send corresponding routes.
-		console.log("sendStopsToPebble: done. Starting sending routes.");
+    console.log("sendStopsToPebble: done. Starting sending routes.");
     sendRoutesToPebble(routes, stopStrings, transactionId, 2 /*nearbyRoutes*/);
-		return;
-	}
+    return;
+  }
 
   // pull the next stop
-	var stop = stops.shift();
+  var stop = stops.shift();
 
-	if(stop.id && stop.name && stop.routeIds) {
-		var direction = stop.direction;
+  if(stop.id && stop.name && stop.routeIds) {
+    var direction = stop.direction;
 
     var routeList = routeStrings[stop.id];
 
-		// data to send back to watch
+    // data to send back to watch
     var dictionary = {
-			'AppMessage_stopId': stop.id,
-			'AppMessage_stopName': stop.name,
+      'AppMessage_stopId': stop.id,
+      'AppMessage_stopName': stop.name,
       'AppMessage_lat': DecimalToDoubleByteArray(stop.lat), 
       'AppMessage_lon': DecimalToDoubleByteArray(stop.lon),
-			'AppMessage_itemsRemaining': 1, // positive int == not done
-			'AppMessage_routeListString': routeList,
+      'AppMessage_itemsRemaining': 1, // positive int == not done
+      'AppMessage_routeListString': routeList,
       'AppMessage_direction': direction,
       'AppMessage_transactionId': transactionId,
-			'AppMessage_messageType': 1 // nearby stops
-		};
+      'AppMessage_messageType': 1 // nearby stops
+    };
 
-		console.log('sendStopsToPebble: sending - ' + stop.id + ',' +
+    console.log('sendStopsToPebble: sending - ' + stop.id + ',' +
       stop.name + ',' + routeList);
 
-		// Send to Pebble
-		sendAppMessage(dictionary,
-			function() {
-				sendStopsToPebble(stops, routes, stopStrings, routeStrings,
+    // Send to Pebble
+    sendAppMessage(dictionary,
+      function() {
+        sendStopsToPebble(stops, routes, stopStrings, routeStrings,
           transactionId);
-			}
+      }
     );
-	}
+  }
   else {
     console.log("sendStopsToPebble: done (with error). Starting sending routes.");
     sendRoutesToPebble(routes, stopStrings, transactionId, 2 /*nearbyRoutes*/);
@@ -474,44 +474,44 @@ function sendStopsToPebble(stops,
  * return an index of routes per stop from OBA nearby stops json
  */
 function buildStopRouteStrings(json) {
-	var routes = json.data.references.routes;
+  var routes = json.data.references.routes;
 
-	var routeTable = {};
-	for(var i = 0; i < routes.length; i++) {
-		console.log('routes: ' + routes[i].id + ' ' + routes[i].shortName);
+  var routeTable = {};
+  for(var i = 0; i < routes.length; i++) {
+    console.log('routes: ' + routes[i].id + ' ' + routes[i].shortName);
     var name = routes[i].shortName ? routes[i].shortName : routes[i].longName;
-		routeTable[routes[i].id] = name.toUpperCase();
-	}
+    routeTable[routes[i].id] = name.toUpperCase();
+  }
 
-	var stringTable = {};
+  var stringTable = {};
 
-	var stops = json.data.list;
-	for(var i = 0; i < stops.length; i++) {
-		var routeString = "";
-		for(var r = 0; r < stops[i].routeIds.length; r++) {
-			if(r === 0) {
-				routeString = routeTable[stops[i].routeIds[r]];
-			}
-			else {
-				routeString = routeString + "," + routeTable[stops[i].routeIds[r]];
-			}
-		}
-		console.log("stop: " + stops[i].id + " routestring: " + routeString);
-		stringTable[stops[i].id] = routeString;
-	}
+  var stops = json.data.list;
+  for(var i = 0; i < stops.length; i++) {
+    var routeString = "";
+    for(var r = 0; r < stops[i].routeIds.length; r++) {
+      if(r === 0) {
+        routeString = routeTable[stops[i].routeIds[r]];
+      }
+      else {
+        routeString = routeString + "," + routeTable[stops[i].routeIds[r]];
+      }
+    }
+    console.log("stop: " + stops[i].id + " routestring: " + routeString);
+    stringTable[stops[i].id] = routeString;
+  }
 
-	return stringTable;
+  return stringTable;
 }
 
 /**
  * return an index of stops per route from OBA nearby stops json
  */
 function buildRouteStopStrings(json) {
-	var stringTable = {};
+  var stringTable = {};
 
-	var stops = json.data.list;
-	for(var i = 0; i < stops.length; i++) {
-		for(var r = 0; r < stops[i].routeIds.length; r++) {
+  var stops = json.data.list;
+  for(var i = 0; i < stops.length; i++) {
+    for(var r = 0; r < stops[i].routeIds.length; r++) {
       var routeId = stops[i].routeIds[r];
       // parsing code expects all stops to be comma terminated
       stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
@@ -522,9 +522,9 @@ function buildRouteStopStrings(json) {
       // else {
       //   stringTable[routeId] = stops[i].id;
       // }
-		}
+    }
   }
-	return stringTable;
+  return stringTable;
 }
 
 /**
@@ -585,20 +585,20 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
   }
 
   // TODO: Make the search radius configurable; experiemented with 200-1000
-	var url = 'http://api.pugetsound.onebusaway.org/api/where/stops-for-location.json?key=' +
-		OBA_API_KEY + '&lat=' + lat + '&lon=' + lon + '&radius=250';
+  var url = 'http://api.pugetsound.onebusaway.org/api/where/stops-for-location.json?key=' +
+    OBA_API_KEY + '&lat=' + lat + '&lon=' + lon + '&radius=250';
 
-	// Send request to OneBusAway
-	xhrRequest(url, 'GET',
-	  function(responseText) {
-	    // responseText contains a JSON object
-	    var json = JSON.parse(responseText);
+  // Send request to OneBusAway
+  xhrRequest(url, 'GET',
+    function(responseText) {
+      // responseText contains a JSON object
+      var json = JSON.parse(responseText);
 
-	    var routeStrings = buildStopRouteStrings(json);
+      var routeStrings = buildStopRouteStrings(json);
       var stopStrings = buildRouteStopStrings(json);
 
-	    var stops = json.data.list;
-	    var routes = json.data.references.routes;
+      var stops = json.data.list;
+      var routes = json.data.references.routes;
 
       // TODO: trim stops to max length to prevent out of memory errors on the
       // watch; or, better solution, paginate the results
@@ -609,37 +609,37 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
         stops.splice((-1)*diff, diff);
       }
 
-	    // return the full list up to the max length requested by the watch
-    	sendStopsToPebble(stops, routes, stopStrings, routeStrings,
+      // return the full list up to the max length requested by the watch
+      sendStopsToPebble(stops, routes, stopStrings, routeStrings,
         transactionId);
-		}
- 	);
+    }
+   );
 }
 
 /**
  * requests the routes for a particular stop and sends the routes to the watch
  */
 function getRoutesForStop(stopId, transactionId) {
-	var url = 'http://api.pugetsound.onebusaway.org/api/where/stop/' + stopId +
+  var url = 'http://api.pugetsound.onebusaway.org/api/where/stop/' + stopId +
     '.json?key=' + OBA_API_KEY;
 
-	// Send request to OneBusAway
-	xhrRequest(url, 'GET',
-	  function(responseText) {
-	    // responseText contains a JSON object
-	    var json = JSON.parse(responseText);
+  // Send request to OneBusAway
+  xhrRequest(url, 'GET',
+    function(responseText) {
+      // responseText contains a JSON object
+      var json = JSON.parse(responseText);
       var routes = json.data.references.routes;
       
       // buildRouteStopStrings faked
       var stopStrings = {};
-     	for(var r = 0; r < routes.length; r++) {
+       for(var r = 0; r < routes.length; r++) {
         var routeId = routes[r].id;
         stopStrings[routeId] = stopId + ",";
       }
       
       sendRoutesToPebble(routes, stopStrings, transactionId, 5 /*RoutesForStop*/);
-  	}
- 	);
+    }
+   );
 }
 
 /** 
@@ -647,14 +647,14 @@ function getRoutesForStop(stopId, transactionId) {
  */
 function getLocation() {
   navigator.geolocation.getCurrentPosition(
-    	function(pos) {
-    		getLocationSuccess(0, pos);
-    	},
-    	function(e) {
-    		console.log("Error requesting location!");
+      function(pos) {
+        getLocationSuccess(0, pos);
+      },
+      function(e) {
+        console.log("Error requesting location!");
         sendError(DIALOG_GPS_ERROR + "\n\n0x0002");
-    	},
-    	{timeout: GPS_TIMEOUT, maximumAge: GPS_MAX_AGE}
+      },
+      {timeout: GPS_TIMEOUT, maximumAge: GPS_MAX_AGE}
   );
 }
 
@@ -663,14 +663,14 @@ function getLocation() {
  * results to the watch
  */
 function getNearbyStops(transactionId) {
-	navigator.geolocation.getCurrentPosition(
-    	function(pos) {
-    		getNearbyStopsLocationSuccess(pos, transactionId);
-    	},
-    	function(e) {
-    		console.log("Error requesting location!");
+  navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        getNearbyStopsLocationSuccess(pos, transactionId);
+      },
+      function(e) {
+        console.log("Error requesting location!");
         sendError(DIALOG_GPS_ERROR + "\n\n0x0003");
-    	},
+      },
       {timeout: GPS_TIMEOUT, maximumAge: GPS_MAX_AGE}
   );
 }
@@ -694,22 +694,22 @@ Pebble.addEventListener('ready',
  */
 Pebble.addEventListener('appmessage',
   function(e) {
-	// console.log('AppMessage received: ' + JSON.stringify(e.payload));
+  // console.log('AppMessage received: ' + JSON.stringify(e.payload));
 
-  	switch(e.payload.AppMessage_messageType) {
-  		case 0: // get arrival times
+    switch(e.payload.AppMessage_messageType) {
+      case 0: // get arrival times
         currentTransaction = e.payload.AppMessage_transactionId;
         var busList = parseBusList(e.payload.AppMessage_busList);
         // var halfLength = Math.ceil(busList.length / 2);    
         // var leftSide = busList.splice(0,halfLength);
         arrivalsJsonCache = {};
-  			getArrivals(busList, e.payload.AppMessage_transactionId);
+        getArrivals(busList, e.payload.AppMessage_transactionId);
         // getArrivals(leftSide, e.payload.AppMessage_transactionId);
         break;
-  		case 1: // get nearyby stops
+      case 1: // get nearyby stops
         currentTransaction = e.payload.AppMessage_transactionId;
-   			getNearbyStops(e.payload.AppMessage_transactionId);
-   			break;
+         getNearbyStops(e.payload.AppMessage_transactionId);
+         break;
       case 3: // get location
         getLocation();
         break;
@@ -718,9 +718,9 @@ Pebble.addEventListener('appmessage',
         currentTransaction = e.payload.AppMessage_transactionId;
         getRoutesForStop(stopId, e.payload.AppMessage_transactionId);
         break;
-  		default:
-  			console.log('unknown messageType:' + e.payload.AppMessage_messageType);
-  			break;
-  	}
+      default:
+        console.log('unknown messageType:' + e.payload.AppMessage_messageType);
+        break;
+    }
   }
 );
