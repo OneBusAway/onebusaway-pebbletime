@@ -1,10 +1,12 @@
-/** This code expects PUGET_SOUND to be defined in keys.js which contains an
-  *  API key for the Puget Sound OBA API 
+/** 
+ * Requires an export from servers.js which provides a dictionary of the form:
+ *  'SERVER_URL':{'key':API_KEY, 'lat':LATITUDE, 'lon':LONGITUDE}
 */
 
 // import API keys
-var keys = require('./keys');
-var OBA_API_KEY = keys.PUGET_SOUND;
+var servers = require('./servers').servers;
+var OBA_SERVER = '';
+var OBA_API_KEY = '';
 
 // import test data
 // TODO: don't make this a 'require' find a better way to do test 'hooks'
@@ -27,6 +29,50 @@ var MAX_STOPS = 50;
 
 var arrivalsJsonCache = {};
 var currentTransaction = -1;
+
+/** Extend Number object with method to convert numeric degrees to radians */
+if (Number.prototype.toRadians === undefined) {
+    Number.prototype.toRadians = function() { return this * Math.PI / 180; };
+}
+
+/**
+ * Calculate the distance between two gps coordinates.
+ * http://www.movable-type.co.uk/scripts/latlong.html
+ */
+function DistanceBetween(lat1, lon1, lat2, lon2) {
+  var R = 6371; // kilometres
+  var φ1 = lat1.toRadians();
+  var φ2 = lat2.toRadians();
+  var Δφ = (lat2-lat1).toRadians();
+  var Δλ = (lon2-lon1).toRadians();
+
+  var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+          Math.cos(φ1) * Math.cos(φ2) *
+          Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+}
+
+/**
+ * Sets the global OBA_SERVER and OBA_API_KEY vars to that of the closest
+ * server to (lat, lon)
+ */
+function setObaServerByLocation(lat, lon) {
+  var distance = 0;
+  for(var server in servers) {
+    var server_distance = DistanceBetween(lat,
+                                          lon,
+                                          servers[server].lat,
+                                          servers[server].lon);
+    if((distance == 0) || (server_distance < distance)) {
+      distance = server_distance;
+      OBA_SERVER = server;
+      OBA_API_KEY = servers[server].key;
+    }
+  }
+  console.log("Setting OBA server: " + OBA_SERVER);
+}
 
 /** Convert a decimal value to a C-compatible 'double' byte array */
 function DecimalToDoubleByteArray(value) { 
@@ -153,7 +199,7 @@ function millisToMinutesAndSeconds(millis) {
  * Convert milliseconds into human readable time, subsituting 'Now' for
  * times below |1 min|
  */
-function millisToMinutesAndSecondsOBA(millis) {
+function millisToMinutesAndSecondsOba(millis) {
   var m = Math.abs(millis);
   var minutes = Math.floor(m / 60000);
   var seconds = ((m % 60000) / 1000).toFixed(0);
@@ -228,7 +274,7 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
       'AppMessage_tripId': arrival.tripId,
       'AppMessage_arrivalDelta': arrivalDelta,
       'AppMessage_arrivalDeltaString': 
-          millisToMinutesAndSecondsOBA(arrivalDelta),
+          millisToMinutesAndSecondsOba(arrivalDelta),
       'AppMessage_itemsRemaining': 1,
       'AppMessage_transactionId': transactionId,
       'AppMessage_arrivalCode': arrivalCode,
@@ -312,7 +358,7 @@ function getArrivals(busArray, transactionId) {
       processArrivalsResponse(bus, busArray, transactionId, arrivalsJsonCache[stopId]);    
     }
     else {
-      var url = 'http://api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/' +
+      var url = OBA_SERVER + '/api/where/arrivals-and-departures-for-stop/' +
         stopId + '.json?key=' + OBA_API_KEY;
 
       // Send request to OneBusAway
@@ -585,7 +631,7 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
   }
 
   // TODO: Make the search radius configurable; experiemented with 200-1000
-  var url = 'http://api.pugetsound.onebusaway.org/api/where/stops-for-location.json?key=' +
+  var url = OBA_SERVER + '/api/where/stops-for-location.json?key=' +
     OBA_API_KEY + '&lat=' + lat + '&lon=' + lon + '&radius=250';
 
   // Send request to OneBusAway
@@ -620,7 +666,7 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
  * requests the routes for a particular stop and sends the routes to the watch
  */
 function getRoutesForStop(stopId, transactionId) {
-  var url = 'http://api.pugetsound.onebusaway.org/api/where/stop/' + stopId +
+  var url = OBA_SERVER + '/api/where/stop/' + stopId +
     '.json?key=' + OBA_API_KEY;
 
   // Send request to OneBusAway
@@ -648,6 +694,16 @@ function getRoutesForStop(stopId, transactionId) {
 function getLocation() {
   navigator.geolocation.getCurrentPosition(
       function(pos) {
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+
+        // test code
+        if(typeof test_lat !== 'undefined' && typeof test_lon !== 'undefined') {
+          lat = test_lat;
+          lon = test_lon;
+        }
+  
+        setObaServerByLocation(lat, lon);
         getLocationSuccess(0, pos);
       },
       function(e) {
