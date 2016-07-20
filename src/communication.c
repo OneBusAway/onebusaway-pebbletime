@@ -254,7 +254,7 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
     else {
       uint size = strlen(busList)+strlen(stop)+strlen(route)+3;
       bus = malloc(size);
-      snprintf(bus, size, "%s\t%s,%s", busList, stop, route);
+      snprintf(bus, size, "%s|%s,%s", busList, stop, route);
     }
     
     free(busList);

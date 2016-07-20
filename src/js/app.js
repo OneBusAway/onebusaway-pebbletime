@@ -59,13 +59,14 @@ function DistanceBetween(lat1, lon1, lat2, lon2) {
  * server to (lat, lon)
  */
 function setObaServerByLocation(lat, lon) {
-  var distance = 0;
+  var distance = -1;
   for(var server in servers) {
     var server_distance = DistanceBetween(lat,
                                           lon,
                                           servers[server].lat,
                                           servers[server].lon);
-    if((distance == 0) || (server_distance < distance)) {
+    console.log(server + " distance: " + server_distance);
+    if((distance == -1) || (server_distance < distance)) {
       distance = server_distance;
       OBA_SERVER = server;
       OBA_API_KEY = servers[server].key;
@@ -378,8 +379,8 @@ function getArrivals(busArray, transactionId) {
  * delimited list sent from the watch
  */
 function parseBusList(busList) {
-  // parse out the bus list (tabs separate "stopId,routeId" pairs)
-  var busPairs = busList.split("\t");
+  // parse out the bus list (| separate "stopId,routeId" pairs)
+  var busPairs = busList.split("|");
   var busArray = [];
   for(var i = 0; i < busPairs.length; i++) {
     var pair = busPairs[i].split(",");
@@ -432,8 +433,9 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
 
   if(route.id) {
     var name = route.shortName ? route.shortName : route.longName;
-    name = name.toUpperCase();
-    name = name ? name : 'Unknown';
+    name = name ? name.toUpperCase() : 'Unknown';
+
+    var description = route.description ? route.description : route.longName;    
 
     // data to send back to watch
     var dictionary = {
@@ -441,13 +443,13 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
       'AppMessage_routeName': name,
       'AppMessage_itemsRemaining': 1, // positive int == not done
       'AppMessage_stopIdList': stopStrings[route.id],
-      'AppMessage_description': route.description,
+      'AppMessage_description': description,
       'AppMessage_transactionId': transactionId,
       'AppMessage_messageType': messageType // nearby routes or routes for stop
     };
 
     console.log('sendRoutesToPebble: sending - ' + route.id + ',' + name + ',' +
-                stopStrings[route.id] + ',' + route.description);
+                stopStrings[route.id] + ',' + description);
 
     sendAppMessage(dictionary,
       function() {
@@ -559,15 +561,14 @@ function buildRouteStopStrings(json) {
   for(var i = 0; i < stops.length; i++) {
     for(var r = 0; r < stops[i].routeIds.length; r++) {
       var routeId = stops[i].routeIds[r];
-      // parsing code expects all stops to be comma terminated
-      stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
 
-      // if(stringTable[routeId]) {
-      //   stringTable[routeId] = stringTable[routeId] + "," +  stops[i].id;
-      // }
-      // else {
-      //   stringTable[routeId] = stops[i].id;
-      // }
+      // parsing code expects all stops to be comma terminated
+      if(stringTable[routeId]) {
+        stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
+      }
+      else {
+        stringTable[routeId] = stops[i].id + ",";
+      }
     }
   }
   return stringTable;
