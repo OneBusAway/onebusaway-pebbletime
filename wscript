@@ -23,7 +23,6 @@ def configure(ctx):
     Universal configuration: add your change prior to calling ctx.load('pebble_sdk').
     """
     ctx.load('pebble_sdk')
-    ctx.define('RELEASE',1)
 
 def build(ctx):
     ctx.load('pebble_sdk')
@@ -34,6 +33,14 @@ def build(ctx):
     for p in ctx.env.TARGET_PLATFORMS:
         ctx.set_env(ctx.all_envs[p])
         ctx.set_group(ctx.env.PLATFORM_NAME)
+        
+        # RELEASE flag optimizes code by disabling logging
+        ctx.env.CFLAGS.append('-DRELEASE')
+        
+        # math-sll arm assembly requirements 
+        # (see https://wiki.ubuntu.com/ARM/Thumb2)
+        ctx.env.CFLAGS.append('-Wa,-mimplicit-it=thumb')
+
         app_elf = '{}/pebble-app.elf'.format(ctx.env.BUILD_DIR)
         ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'), target=app_elf)
 
