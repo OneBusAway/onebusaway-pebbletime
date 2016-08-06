@@ -243,7 +243,7 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
         { hour12: true, hour: "numeric", minute: "numeric"})
     var predicted_string = "n/a"; //scheduled_string;
     
-    if(predictedArrivalTime !== 0) {
+    if(predictedArrivalTime !== undefined && predictedArrivalTime !== 0) {
       arrivalTime = predictedArrivalTime;
       var schedule_difference = predictedArrivalTime - scheduledArrivalTime;
       predicted_string = 
@@ -327,7 +327,16 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
 function processArrivalsResponse(bus, busArray, transactionId, responseText) {
   // responseText contains a JSON object
   var json = JSON.parse(responseText);
-  var arrivalsAndDepartures = json.data.entry.arrivalsAndDepartures;
+  
+  var arrivalsAndDepartures;
+  if(json.data.hasOwnProperty("entry") && 
+     json.data.entry.hasOwnProperty("arrivalsAndDepartures")) {
+    arrivalsAndDepartures = json.data.entry.arrivalsAndDepartures;
+  }
+  else if (json.data.hasOwnProperty("arrivalsAndDepartures")) {
+    // special case for New York (MTA)
+    arrivalsAndDepartures = json.data.arrivalsAndDepartures;
+  }
   var currentTime = json.currentTime;
   if(currentTime) {
     // arrivalsAndDepartures can be zero length; it does not represent
@@ -483,7 +492,7 @@ function sendStopsToPebble(stops,
   // pull the next stop
   var stop = stops.shift();
 
-  if(stop.id && stop.name && stop.routeIds) {
+  if(stop.id && stop.name) {
     var direction = stop.direction;
 
     var routeList = routeStrings[stop.id];
@@ -522,32 +531,55 @@ function sendStopsToPebble(stops,
  * return an index of routes per stop from OBA nearby stops json
  */
 function buildStopRouteStrings(json) {
-  var routes = json.data.references.routes;
-
-  var routeTable = {};
-  for(var i = 0; i < routes.length; i++) {
-    console.log('routes: ' + routes[i].id + ' ' + routes[i].shortName);
-    var name = routes[i].shortName ? routes[i].shortName : routes[i].longName;
-    routeTable[routes[i].id] = name.toUpperCase();
-  }
-
   var stringTable = {};
-
-  var stops = json.data.list;
-  for(var i = 0; i < stops.length; i++) {
-    var routeString = "";
-    for(var r = 0; r < stops[i].routeIds.length; r++) {
-      if(r === 0) {
-        routeString = routeTable[stops[i].routeIds[r]];
-      }
-      else {
-        routeString = routeString + "," + routeTable[stops[i].routeIds[r]];
-      }
+  
+  if(json.data.hasOwnProperty('references')) {
+    var routes = json.data.references.routes;
+    var routeTable = {};
+    for(var i = 0; i < routes.length; i++) {
+      console.log('routes: ' + routes[i].id + ' ' + routes[i].shortName);
+      var name = routes[i].shortName ? routes[i].shortName : routes[i].longName;
+      routeTable[routes[i].id] = name.toUpperCase();
     }
-    console.log("stop: " + stops[i].id + " routestring: " + routeString);
-    stringTable[stops[i].id] = routeString;
-  }
 
+    var stops = json.data.list;
+    for(var i = 0; i < stops.length; i++) {
+      var routeString = "";
+      for(var r = 0; r < stops[i].routeIds.length; r++) {
+        if(r === 0) {
+          routeString = routeTable[stops[i].routeIds[r]];
+        }
+        else {
+          routeString = routeString + "," + routeTable[stops[i].routeIds[r]];
+        }
+      }
+      console.log("stop: " + stops[i].id + " routestring: " + routeString);
+      stringTable[stops[i].id] = routeString;
+    }
+  }
+  else {
+    // special case for New York (MTA) which does not provide <references>,
+    // among other annoyances
+    var stops = json.data.stops;
+    for(var i = 0; i < stops.length; i++) {
+      var routeString = "";
+      var stop = stops[i];
+      for(var r = 0; r < stop.routes.length; r++) {
+        var route = stop.routes[r];
+        var name = route.shortName ? route.shortName : route.longName;
+        name = name.toUpperCase();
+        if(r === 0) {
+          routeString = name;
+        }
+        else {
+          routeString = routeString + "," + name;
+        }
+      }
+      console.log("stop: " + stops[i].id + " routestring: " + routeString);
+      stringTable[stops[i].id] = routeString;
+    }
+  }
+  
   return stringTable;
 }
 
@@ -557,21 +589,66 @@ function buildStopRouteStrings(json) {
 function buildRouteStopStrings(json) {
   var stringTable = {};
 
-  var stops = json.data.list;
-  for(var i = 0; i < stops.length; i++) {
-    for(var r = 0; r < stops[i].routeIds.length; r++) {
-      var routeId = stops[i].routeIds[r];
+  if(json.data.hasOwnProperty('references')) {
+    var stops = json.data.list;
+    for(var i = 0; i < stops.length; i++) {
+      for(var r = 0; r < stops[i].routeIds.length; r++) {
+        var routeId = stops[i].routeIds[r];
 
-      // parsing code expects all stops to be comma terminated
-      if(stringTable[routeId]) {
-        stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
-      }
-      else {
-        stringTable[routeId] = stops[i].id + ",";
+        // parsing code expects all stops to be comma terminated
+        if(stringTable[routeId]) {
+          stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
+        }
+        else {
+          stringTable[routeId] = stops[i].id + ",";
+        }
       }
     }
   }
+  else {
+    // special case for New York (MTA)
+    var stops = json.data.stops;
+    for(var i = 0; i < stops.length; i++) {
+      for(var r = 0; r < stops[i].routes.length; r++) {
+        var routeId = stops[i].routes[r].id;
+
+        // parsing code expects all stops to be comma terminated
+        if(stringTable[routeId]) {
+          stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
+        }
+        else {
+          stringTable[routeId] = stops[i].id + ",";
+        }
+      }
+    }
+  }
+
   return stringTable;
+}
+
+/**
+ * constructs the list of routes
+ */
+function buildRoutesList(json) {
+  var routes = [];
+  if(json.data.hasOwnProperty('references')) {
+    routes = json.data.references.routes;
+  }
+  else {
+    var routehash = {};
+    var stops = json.data.stops;
+    for(var i = 0; i < stops.length; i++) {
+      for(var r = 0; r < stops[i].routes.length; r++) {
+        var route = stops[i].routes[r];
+        routehash[route.id] = route;
+      }
+    }
+    for(r in routehash) {
+      routes.push(routehash[r]);
+    }
+  } 
+  console.log(routes);
+  return routes;
 }
 
 /**
@@ -644,9 +721,16 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
       var routeStrings = buildStopRouteStrings(json);
       var stopStrings = buildRouteStopStrings(json);
 
-      var stops = json.data.list;
-      var routes = json.data.references.routes;
-
+      if(json.data.hasOwnProperty('references')) {
+        stops = json.data.list;
+        routes = json.data.references.routes;
+      }
+      else {
+        // New York (MTA) special case
+        stops = json.data.stops;
+        routes = buildRoutesList(json);
+      }
+    
       // TODO: trim stops to max length to prevent out of memory errors on the
       // watch; or, better solution, paginate the results
       if(stops.length > MAX_STOPS) {
