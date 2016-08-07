@@ -4,3 +4,4 @@
 build
 src/js/servers.js
 src/js/test.js
+node_modules/

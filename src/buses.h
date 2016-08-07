@@ -2,7 +2,7 @@
 #define BUSES_H
 
 #include <pebble.h>
-#include "math-sll.h"
+#include <pebble-math-sll/math-sll.h>
 
 #define ID_LENGTH 20
 #define DIRECTION_LENGTH 5

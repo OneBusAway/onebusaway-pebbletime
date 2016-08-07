@@ -10,9 +10,9 @@ var OBA_API_KEY = '';
 
 // import test data
 // TODO: don't make this a 'require' find a better way to do test 'hooks'
-var test = require('./test');
-var test_lat = test.lat;
-var test_lon = test.lon;
+// var test = require('./test');
+// var test_lat = test.lat;
+// var test_lon = test.lon;
 
 var DIALOG_GPS_ERROR = 
     "Location Error.\n\nCheck phone GPS settings & signal.";
