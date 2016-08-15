@@ -1,4 +1,4 @@
-/** 
+/**
  * Requires an export from servers.js which provides a dictionary of the form:
  *  'SERVER_URL':{'key':API_KEY, 'lat':LATITUDE, 'lon':LONGITUDE}
 */
@@ -10,13 +10,13 @@ var OBA_API_KEY = '';
 
 // import test data
 // TODO: don't make this a 'require' find a better way to do test 'hooks'
-// var test = require('./test');
-// var test_lat = test.lat;
-// var test_lon = test.lon;
+var test = require('./test');
+var test_lat = test.lat;
+var test_lon = test.lon;
 
-var DIALOG_GPS_ERROR = 
+var DIALOG_GPS_ERROR =
     "Location Error.\n\nCheck phone GPS settings & signal.";
-var DIALOG_INTERNET_ERROR = 
+var DIALOG_INTERNET_ERROR =
     "Connection failure.\n\nCheck phone internet connection.";
 var GPS_TIMEOUT = 15000;
 var GPS_MAX_AGE = 60000;
@@ -76,7 +76,7 @@ function setObaServerByLocation(lat, lon) {
 }
 
 /** Convert a decimal value to a C-compatible 'double' byte array */
-function DecimalToDoubleByteArray(value) { 
+function DecimalToDoubleByteArray(value) {
   var buffer = new ArrayBuffer(8);
   var floatArray = new Float64Array(buffer);
   floatArray[0] = value;
@@ -87,10 +87,10 @@ function DecimalToDoubleByteArray(value) {
   for(var i=0; i < 8; ++i) {
     ret_bytes.push(byteArray[i]);
   }
-  
+
   return ret_bytes;
 }
-  
+
 
 function randomIntFromInterval(min,max) {
   return Math.floor(Math.random()*(max-min+1)+min);
@@ -149,18 +149,18 @@ function xhrRequest(url, type, callback) {
     attempts += 1;
     if(attempts < HTTP_MAX_ATTEMPTS) {
       setTimeout(function() {
-        xhrRequestDo(); }, 
+        xhrRequestDo(); },
         randomIntFromInterval(0, HTTP_RETRY_TIMEOUT*attempts));
     }
     else {
-      console.log('xhrRequest: Failed after ' + attempts + 
+      console.log('xhrRequest: Failed after ' + attempts +
                   ' attempts. Bailing.');
       sendError(DIALOG_INTERNET_ERROR  + "\n\n0x0000");
     }
   }
 
   function xhrRequestDo() {
-    // console.log('xhrRequest: starting ' + url);
+    console.log('xhrRequest: starting ' + url);
     var xhr = new XMLHttpRequest();
     xhr.timeout = HTTP_REQUEST_TIMEOUT*(attempts+1);
     xhr.onload = function () {
@@ -185,7 +185,7 @@ function xhrRequest(url, type, callback) {
     xhr.send();
   }
   xhrRequestDo();
-};
+}
 
 function sign(x) { return x > 0 ? '' : x < 0 ? '-' : ''; }
 
@@ -196,7 +196,7 @@ function millisToMinutesAndSeconds(millis) {
   return sign(millis) + minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 }
 
-/** 
+/**
  * Convert milliseconds into human readable time, subsituting 'Now' for
  * times below |1 min|
  */
@@ -212,9 +212,38 @@ function millisToMinutesAndSecondsOba(millis) {
   }
 }
 
-/** 
- * Sends bus arrival information from 'arrivals' for the 'bus' to the watch, 
- * one arrival at a time. When the current arrivals have been exhausted, 
+/**
+ * Sends the completion signal for an arrivals request on specific bus, starts
+ * the request for the next bus in the busArray
+ */
+function completeArrivalsRequest(busArray, transactionId) {
+  // signal completion of this request
+  var dictionary = {
+    'AppMessage_stopId': 0,
+    'AppMessage_routeId': 0,
+    'AppMessage_tripId': 0,
+    'AppMessage_arrivalDelta': 0,
+    'AppMessage_arrivalDeltaString': 0,
+    'AppMessage_itemsRemaining': 0,
+    'AppMessage_transactionId': transactionId,
+    'AppMessage_arrivalCode': 's',
+    'AppMessage_scheduled': "",
+    'AppMessage_predicted': "",
+    'AppMessage_messageType': 0 // arrival time
+  };
+
+  // Send to Pebble
+  sendAppMessage(dictionary,
+    function(e) {
+      // get the arrivals for the next bus in the request
+      getArrivals(busArray, transactionId);
+    }
+  );
+}
+
+/**
+ * Sends bus arrival information from 'arrivals' for the 'bus' to the watch,
+ * one arrival at a time. When the current arrivals have been exhausted,
  * starts the process of getting the arrivals fort he next bus in 'busArray'
  */
 function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
@@ -227,7 +256,7 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
     arrival = arrivals.shift();
   }
 
-  // if we found an arrival for the bus, send it along, 
+  // if we found an arrival for the bus, send it along,
   // or, the transaction has not been canceled
   if(arrival && arrival.routeId && (arrival.routeId == routeId) &&
      (transactionId == currentTransaction)) {
@@ -235,21 +264,21 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
     var arrivalTime = 0;
     var scheduledArrivalTime = arrival.scheduledArrivalTime;
     var predictedArrivalTime = arrival.predictedArrivalTime;
-    
+
     var arrivalCode = 's';
 
-    var scheduled_string = 
-      (new Date(scheduledArrivalTime)).toLocaleTimeString('en-US', 
-        { hour12: true, hour: "numeric", minute: "numeric"})
+    var scheduled_string =
+      (new Date(scheduledArrivalTime)).toLocaleTimeString('en-US',
+        { hour12: true, hour: "numeric", minute: "numeric"});
     var predicted_string = "n/a"; //scheduled_string;
-    
+
     if(predictedArrivalTime !== undefined && predictedArrivalTime !== 0) {
       arrivalTime = predictedArrivalTime;
       var schedule_difference = predictedArrivalTime - scheduledArrivalTime;
-      predicted_string = 
-        (new Date(predictedArrivalTime)).toLocaleTimeString('en-US', 
-          { hour12: true, hour: "numeric", minute: "numeric"})
-      
+      predicted_string =
+        (new Date(predictedArrivalTime)).toLocaleTimeString('en-US',
+          { hour12: true, hour: "numeric", minute: "numeric"});
+
       // set arrival status
       if(schedule_difference > 60000) {
         arrivalCode = 'l'; // late by over 1 min
@@ -274,7 +303,7 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
       'AppMessage_routeId': routeId,
       'AppMessage_tripId': arrival.tripId,
       'AppMessage_arrivalDelta': arrivalDelta,
-      'AppMessage_arrivalDeltaString': 
+      'AppMessage_arrivalDeltaString':
           millisToMinutesAndSecondsOba(arrivalDelta),
       'AppMessage_itemsRemaining': 1,
       'AppMessage_transactionId': transactionId,
@@ -294,29 +323,7 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
     );
   }
   else {
-    // signal completion of this request
-    var dictionary = {
-      'AppMessage_stopId': 0,
-      'AppMessage_routeId': 0,
-      'AppMessage_tripId': 0,
-      'AppMessage_arrivalDelta': 0,
-      'AppMessage_arrivalDeltaString': 0,
-      'AppMessage_itemsRemaining': 0,
-      'AppMessage_transactionId': transactionId,
-      'AppMessage_arrivalCode': 's',
-      'AppMessage_scheduled': "",
-      'AppMessage_predicted': "",  
-      'AppMessage_messageType': 0 // arrival time
-    };
-
-    // Send to Pebble
-    sendAppMessage(dictionary,
-      function(e) {
-      }
-    );
-    
-    // get the arrivals for the next bus in the request
-    getArrivals(busArray, transactionId);
+    completeArrivalsRequest(busArray, transactionId);
   }
 }
 
@@ -327,28 +334,30 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
 function processArrivalsResponse(bus, busArray, transactionId, responseText) {
   // responseText contains a JSON object
   var json = JSON.parse(responseText);
-  
-  var arrivalsAndDepartures;
-  if(json.data.hasOwnProperty("entry") && 
-     json.data.entry.hasOwnProperty("arrivalsAndDepartures")) {
-    arrivalsAndDepartures = json.data.entry.arrivalsAndDepartures;
-  }
-  else if (json.data.hasOwnProperty("arrivalsAndDepartures")) {
-    // special case for New York (MTA)
-    arrivalsAndDepartures = json.data.arrivalsAndDepartures;
-  }
-  var currentTime = json.currentTime;
-  if(currentTime) {
+
+  if(json.data !== null && json.currentTime !== null) {
+    var arrivalsAndDepartures;
+    if(json.data.hasOwnProperty("entry") &&
+      json.data.entry.hasOwnProperty("arrivalsAndDepartures")) {
+      arrivalsAndDepartures = json.data.entry.arrivalsAndDepartures;
+    }
+    else if (json.data.hasOwnProperty("arrivalsAndDepartures")) {
+      // special case for New York (MTA)
+      arrivalsAndDepartures = json.data.arrivalsAndDepartures;
+    }
+    var currentTime = json.currentTime;
+
     // arrivalsAndDepartures can be zero length; it does not represent
     // an unrecoverable error
-    getNextArrival(bus, 
-                   busArray, 
-                   arrivalsAndDepartures, 
-                   currentTime, 
+    getNextArrival(bus,
+                   busArray,
+                   arrivalsAndDepartures,
+                   currentTime,
                    transactionId);
   }
   else {
-    sendError(DIALOG_INTERNET_ERROR + "\n\n0x0001");
+  //   sendError(DIALOG_INTERNET_ERROR + "\n\n0x0001");
+    completeArrivalsRequest(busArray, transactionId);
   }
 }
 
@@ -360,12 +369,12 @@ function processArrivalsResponse(bus, busArray, transactionId, responseText) {
  */
 function getArrivals(busArray, transactionId) {
   var bus = busArray.shift();
-  
+
   if(bus) {
     var stopId = bus.stopId;
 
     if(arrivalsJsonCache[stopId]) {
-      processArrivalsResponse(bus, busArray, transactionId, arrivalsJsonCache[stopId]);    
+      processArrivalsResponse(bus, busArray, transactionId, arrivalsJsonCache[stopId]);
     }
     else {
       var url = OBA_SERVER + '/api/where/arrivals-and-departures-for-stop/' +
@@ -383,8 +392,8 @@ function getArrivals(busArray, transactionId) {
 }
 
 
-/** 
- * build an array of route & stop pairs representing a bus from the 
+/**
+ * build an array of route & stop pairs representing a bus from the
  * delimited list sent from the watch
  */
 function parseBusList(busList) {
@@ -399,7 +408,7 @@ function parseBusList(busList) {
     };
     busArray.push(bus);
   }
-  return busArray;  
+  return busArray;
 }
 
 /**
@@ -444,7 +453,7 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
     var name = route.shortName ? route.shortName : route.longName;
     name = name ? name.toUpperCase() : 'Unknown';
 
-    var description = route.description ? route.description : route.longName;    
+    var description = route.description ? route.description : route.longName;
 
     // data to send back to watch
     var dictionary = {
@@ -476,9 +485,9 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
 /**
  * Send the list of nearby stops as requested by the watch settings menu
  */
-function sendStopsToPebble(stops, 
-                           routes, 
-                           stopStrings, 
+function sendStopsToPebble(stops,
+                           routes,
+                           stopStrings,
                            routeStrings,
                            transactionId) {
 
@@ -501,7 +510,7 @@ function sendStopsToPebble(stops,
     var dictionary = {
       'AppMessage_stopId': stop.id,
       'AppMessage_stopName': stop.name,
-      'AppMessage_lat': DecimalToDoubleByteArray(stop.lat), 
+      'AppMessage_lat': DecimalToDoubleByteArray(stop.lat),
       'AppMessage_lon': DecimalToDoubleByteArray(stop.lon),
       'AppMessage_itemsRemaining': 1, // positive int == not done
       'AppMessage_routeListString': routeList,
@@ -532,19 +541,26 @@ function sendStopsToPebble(stops,
  */
 function buildStopRouteStrings(json) {
   var stringTable = {};
-  
+
+  if(json.data === null) {
+    return stringTable;
+  }
+
   if(json.data.hasOwnProperty('references')) {
     var routes = json.data.references.routes;
     var routeTable = {};
-    for(var i = 0; i < routes.length; i++) {
-      console.log('routes: ' + routes[i].id + ' ' + routes[i].shortName);
-      var name = routes[i].shortName ? routes[i].shortName : routes[i].longName;
-      routeTable[routes[i].id] = name.toUpperCase();
+    for(var j = 0; j < routes.length; j++) {
+      console.log('routes: ' + routes[j].id + ' ' + routes[j].shortName);
+      var name = routes[j].shortName ? routes[j].shortName : routes[j].longName;
+      routeTable[routes[j].id] = name.toUpperCase();
     }
 
     var stops = json.data.list;
     for(var i = 0; i < stops.length; i++) {
       var routeString = "";
+
+      console.log('bulidStpoRouteID: ' + JSON.stringify(stops[i].routeIds));
+
       for(var r = 0; r < stops[i].routeIds.length; r++) {
         if(r === 0) {
           routeString = routeTable[stops[i].routeIds[r]];
@@ -579,7 +595,7 @@ function buildStopRouteStrings(json) {
       stringTable[stops[i].id] = routeString;
     }
   }
-  
+
   return stringTable;
 }
 
@@ -589,11 +605,17 @@ function buildStopRouteStrings(json) {
 function buildRouteStopStrings(json) {
   var stringTable = {};
 
+  if(json.data === null) {
+    return stringTable;
+  }
+
   if(json.data.hasOwnProperty('references')) {
     var stops = json.data.list;
     for(var i = 0; i < stops.length; i++) {
       for(var r = 0; r < stops[i].routeIds.length; r++) {
         var routeId = stops[i].routeIds[r];
+
+        console.log("RID: " + routeId);
 
         // parsing code expects all stops to be comma terminated
         if(stringTable[routeId]) {
@@ -602,6 +624,8 @@ function buildRouteStopStrings(json) {
         else {
           stringTable[routeId] = stops[i].id + ",";
         }
+
+        console.log("ST:" + stringTable[routeId]);
       }
     }
   }
@@ -631,6 +655,11 @@ function buildRouteStopStrings(json) {
  */
 function buildRoutesList(json) {
   var routes = [];
+
+  if(json.data === null) {
+    return routes;
+  }
+
   if(json.data.hasOwnProperty('references')) {
     routes = json.data.references.routes;
   }
@@ -646,7 +675,7 @@ function buildRoutesList(json) {
     for(r in routehash) {
       routes.push(routehash[r]);
     }
-  } 
+  }
   console.log(routes);
   return routes;
 }
@@ -654,6 +683,7 @@ function buildRoutesList(json) {
 /**
  * sends the current GPS coordinates to the watch
  */
+// TODO: convert to the sendAppMessage function - this is redundant
 function getLocationSuccess(attempts, pos) {
   if(attempts < APP_MESSAGE_MAX_ATTEMPTS) {
     var lat = pos.coords.latitude;
@@ -721,30 +751,34 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
       var routeStrings = buildStopRouteStrings(json);
       var stopStrings = buildRouteStopStrings(json);
 
-      if(json.data.hasOwnProperty('references')) {
-        stops = json.data.list;
-        routes = json.data.references.routes;
-      }
-      else {
-        // New York (MTA) special case
-        stops = json.data.stops;
-        routes = buildRoutesList(json);
-      }
-    
-      // TODO: trim stops to max length to prevent out of memory errors on the
-      // watch; or, better solution, paginate the results
-      if(stops.length > MAX_STOPS) {
-        var diff = stops.length - MAX_STOPS;
-        console.log("---WARNING--- cutting stop length from " + stops.length +
-          " to " + MAX_STOPS);
-        stops.splice((-1)*diff, diff);
-      }
+      if(json.data !== null) {
+        var stops;
+        var routes;
+        if(json.data.hasOwnProperty('references')) {
+          stops = json.data.list;
+          routes = json.data.references.routes;
+        }
+        else {
+          // New York (MTA) special case
+          stops = json.data.stops;
+          routes = buildRoutesList(json);
+        }
 
-      // return the full list up to the max length requested by the watch
-      sendStopsToPebble(stops, routes, stopStrings, routeStrings,
-        transactionId);
+        // TODO: trim stops to max length to prevent out of memory errors on the
+        // watch; or, better solution, paginate the results
+        if(stops.length > MAX_STOPS) {
+          var diff = stops.length - MAX_STOPS;
+          console.log("---WARNING--- cutting stop length from " + stops.length +
+            " to " + MAX_STOPS);
+          stops.splice((-1)*diff, diff);
+        }
+
+        // return the full list up to the max length requested by the watch
+        sendStopsToPebble(stops, routes, stopStrings, routeStrings,
+          transactionId);
+      }
     }
-   );
+  );
 }
 
 /**
@@ -759,21 +793,30 @@ function getRoutesForStop(stopId, transactionId) {
     function(responseText) {
       // responseText contains a JSON object
       var json = JSON.parse(responseText);
-      var routes = json.data.references.routes;
-      
-      // buildRouteStopStrings faked
-      var stopStrings = {};
-       for(var r = 0; r < routes.length; r++) {
-        var routeId = routes[r].id;
-        stopStrings[routeId] = stopId + ",";
+      var routes;
+      if(json.data !== null) {
+        if(json.data.hasOwnProperty('references')) {
+          routes = json.data.references.routes;
+        }
+        else {
+          // New York (MTA) special case
+          routes = buildRoutesList(json);
+        }
+
+        // buildRouteStopStrings faked
+        var stopStrings = {};
+        for(var r = 0; r < routes.length; r++) {
+          var routeId = routes[r].id;
+          stopStrings[routeId] = stopId + ",";
+        }
+
+        sendRoutesToPebble(routes, stopStrings, transactionId, 5 /*RoutesForStop*/);
       }
-      
-      sendRoutesToPebble(routes, stopStrings, transactionId, 5 /*RoutesForStop*/);
     }
-   );
+  );
 }
 
-/** 
+/**
  * gets the current GPS location, sends lat/long to the watch
  */
 function getLocation() {
@@ -787,7 +830,7 @@ function getLocation() {
           lat = test_lat;
           lon = test_lon;
         }
-  
+
         setObaServerByLocation(lat, lon);
         getLocationSuccess(0, pos);
       },
@@ -800,7 +843,7 @@ function getLocation() {
 }
 
 /**
- * gets the nearby OBA stops based on the current location and sends the 
+ * gets the nearby OBA stops based on the current location and sends the
  * results to the watch
  */
 function getNearbyStops(transactionId) {
@@ -816,7 +859,7 @@ function getNearbyStops(transactionId) {
   );
 }
 
-/** 
+/**
  * Listen for when the watch app is open and ready, triggers a location update
  * when data can be sent to the watch
  */
@@ -829,7 +872,7 @@ Pebble.addEventListener('ready',
   }
 );
 
-/** 
+/**
  * Listen for when an AppMessage is received and start the corresponding
  * transaction
  */
@@ -841,7 +884,7 @@ Pebble.addEventListener('appmessage',
       case 0: // get arrival times
         currentTransaction = e.payload.AppMessage_transactionId;
         var busList = parseBusList(e.payload.AppMessage_busList);
-        // var halfLength = Math.ceil(busList.length / 2);    
+        // var halfLength = Math.ceil(busList.length / 2);
         // var leftSide = busList.splice(0,halfLength);
         arrivalsJsonCache = {};
         getArrivals(busList, e.payload.AppMessage_transactionId);
