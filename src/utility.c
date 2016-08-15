@@ -72,6 +72,12 @@ void StringCopy(char* a, const char* b, uint s) {
   }
 }
 
+void StringAllocateAndCopy(char** a, const char* b) {
+  int i = strlen(b);
+  *a = (char *)malloc(sizeof(char)*(i+1));
+  memcpy(*a, b, i+1);
+}
+
 void FreeAndClearPointer(void** ptr) {
   free(*ptr);
   *ptr = NULL;

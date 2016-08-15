@@ -16,6 +16,7 @@ void MenuCellDraw(GContext *ctx,
                   const char* title, 
                   const char* details);
 void StringCopy(char* a, const char* b, uint s);
+void StringAllocateAndCopy(char** a, const char* b);
 void FreeAndClearPointer(void** ptr);
 
 #endif /* end of include guard: UTILITY_H */

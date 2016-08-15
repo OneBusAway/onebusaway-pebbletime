@@ -21,7 +21,7 @@ static void BluetoothCallback(bool connected) {
 static void HandleInit(AppData* appdata) {
   // Upgrade persistence (as needed)
   PersistenceVersionControl();
-  
+
   // Initialize app data
   appdata->initialized = false;
   appdata->show_settings = true;
@@ -30,7 +30,7 @@ static void HandleInit(AppData* appdata) {
 
   // Initialize app message communication
   CommunicationInit(appdata);
-  
+
   // Register for Bluetooth connection updates
   connection_service_subscribe((ConnectionHandlers) {
     .pebble_app_connection_handler = BluetoothCallback
@@ -46,8 +46,7 @@ static void HandleInit(AppData* appdata) {
 static void HandleDeinit(AppData* appdata) {
   SettingsRoutesDeinit();
   SettingsStopsDeinit();
-  FreeAndClearPointer((void**)&appdata->buses.data);
-  FreeAndClearPointer((void**)&appdata->buses.filter_index);
+  BusesDestructor(&appdata->buses);
   ArrivalsDestructor(&appdata->arrivals);
   CommunicationDeinit();
   MainWindowDeinit();

@@ -171,7 +171,6 @@ static void WindowUnload(Window *window) {
   window_destroy(window);
   s_main_window = NULL;
   FreeAndClearPointer((void**)&s_message);
-  APP_LOG(APP_LOG_LEVEL_ERROR, "dONE UNLOADING ERROR WINDOW.");
 }
 
 void ErrorWindowPush(const char* message, bool critical) {

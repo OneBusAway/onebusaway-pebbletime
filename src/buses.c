@@ -10,9 +10,9 @@ void ListBuses(const Buses* buses) {
     Bus b = buses->data[i];
     APP_LOG(APP_LOG_LEVEL_INFO,
             "%u - route:%s\troute_id:%s\tstop_id:%s",
-            (uint)i, 
-            b.route_name, 
-            b.route_id, 
+            (uint)i,
+            b.route_name,
+            b.route_id,
             b.stop_id);
   }
 #endif
@@ -27,13 +27,13 @@ void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses) {
     // distance in KM
     sll d = DistanceBetweenSLL(b.lat, b.lon, lat, lon);
 
-    //TODO / IDEA: make this return at least one stop, 
+    //TODO / IDEA: make this return at least one stop,
     //  or search outward from the radius to find some...
-    //TODO: make DEFINE or var set in settings, coordinate with JS OBA calls 
-    //  w/ radius set. One pattern could be that this distance is 2x, 4x the 
+    //TODO: make DEFINE or var set in settings, coordinate with JS OBA calls
+    //  w/ radius set. One pattern could be that this distance is 2x, 4x the
     //  stop search dist?
     if(d < dbl2sll(1.000)) {
-      uint32_t* temp = (uint32_t*)malloc(sizeof(uint32_t) * 
+      uint32_t* temp = (uint32_t*)malloc(sizeof(uint32_t) *
                                          (buses->filter_count+1));
       if(temp == NULL) {
         APP_LOG(APP_LOG_LEVEL_ERROR, "NULL FILTER POINTER");
@@ -49,17 +49,34 @@ void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses) {
   }
 }
 
-static bool CreateBus(const char* route_id, 
+void BusDestructor(Bus* bus) {
+  FreeAndClearPointer((void**)&bus->route_id);
+  FreeAndClearPointer((void**)&bus->stop_id);
+  FreeAndClearPointer((void**)&bus->route_name);
+  FreeAndClearPointer((void**)&bus->stop_name);
+  FreeAndClearPointer((void**)&bus->description);
+  FreeAndClearPointer((void**)&bus->direction);
+}
+
+void BusesDestructor(Buses* buses) {
+  for(uint i = 0; i < buses->count; i++) {
+    BusDestructor(&buses->data[i]);
+  }
+  FreeAndClearPointer((void**)&buses->data);
+  FreeAndClearPointer((void**)&buses->filter_index);
+}
+
+static bool CreateBus(const char* route_id,
                       const char* route_name,
                       const char* description,
                       const char* stop_id,
-                      const char* stop_name, 
+                      const char* stop_name,
                       const sll lat,
-                      const sll lon, 
+                      const sll lon,
                       const char* direction,
                       Buses* buses) {
 
-  APP_LOG(APP_LOG_LEVEL_INFO, 
+  APP_LOG(APP_LOG_LEVEL_INFO,
           "Creating bus - routename:%s, route_id:%s, buses: %p, count: %i",
           route_name,
           route_id,
@@ -68,12 +85,12 @@ static bool CreateBus(const char* route_id,
 
   // create new bus
   Bus temp_bus;
-  StringCopy(temp_bus.route_id, route_id, ID_LENGTH);
-  StringCopy(temp_bus.stop_id, stop_id, ID_LENGTH);
-  StringCopy(temp_bus.route_name, route_name, ROUTE_SHORT_LENGTH);
-  StringCopy(temp_bus.stop_name, stop_name, STOP_LENGTH);
-  StringCopy(temp_bus.description, description, DESCRIPTION_LENGTH);
-  StringCopy(temp_bus.direction, direction, DIRECTION_LENGTH);
+  StringAllocateAndCopy(&temp_bus.route_id, route_id);
+  StringAllocateAndCopy(&temp_bus.stop_id, stop_id);
+  StringAllocateAndCopy(&temp_bus.route_name, route_name);
+  StringAllocateAndCopy(&temp_bus.stop_name, stop_name);
+  StringAllocateAndCopy(&temp_bus.description, description);
+  StringAllocateAndCopy(&temp_bus.direction, direction);
   temp_bus.lat = lat;
   temp_bus.lon = lon;
 
@@ -125,13 +142,13 @@ bool AddBusFromStopRoute(const Stop* stop, const Route* route, Buses* buses) {
 }
 
 int32_t GetBusIndex(
-    const char* stop_id, 
-    const char* route_id, 
+    const char* stop_id,
+    const char* route_id,
     const Buses* buses) {
-      
+
   for(uint32_t i  = 0; i < buses->count; i++) {
     Bus bus = buses->data[i];
-    if((strcmp(bus.stop_id,stop_id) == 0) && 
+    if((strcmp(bus.stop_id, stop_id) == 0) &&
         (strcmp(bus.route_id, route_id) == 0)) {
       return i;
     }
@@ -144,12 +161,15 @@ void RemoveBus(uint32_t index, Buses *buses) {
   if(buses->count <= 0) return;
   if(buses->count <= index) return;
 
-  // delete persistence 
+  // delete persistence
   DeleteBusFromPersistence(buses, index);
-  
+
+  // destroy bus
+  BusDestructor(&buses->data[index]);
+
   if(buses->count == 1) {
     FreeAndClearPointer((void**)&buses->data);
-    buses->count = 0;    
+    buses->count = 0;
     return;
   }
 
@@ -165,7 +185,7 @@ void RemoveBus(uint32_t index, Buses *buses) {
   // second part copy
   if((index+1) < buses->count) {
     memcpy(&temp_buses[index],
-           &buses->data[index+1], 
+           &buses->data[index+1],
            sizeof(Bus)*(buses->count-index-1));
   }
 
@@ -181,11 +201,11 @@ void AddStop(const char* stop_id,
              const sll lon,
              const char * direction,
              Stops* stops) {
-      
-  APP_LOG(APP_LOG_LEVEL_INFO, 
+
+  APP_LOG(APP_LOG_LEVEL_INFO,
           "Creating stop - stop:%s, name:%s, details:%s",
           stop_id,
-          stop_name, 
+          stop_name,
           detail_string);
   Stop* temp_stops = (Stop *)malloc(sizeof(Stop)*((stops->count)+1));
   if(temp_stops == NULL) {
@@ -196,11 +216,11 @@ void AddStop(const char* stop_id,
     free(stops->data);
   }
   stops->data = temp_stops;
-  Stop temp = StopConstructor(stop_id, 
-                              stop_name, 
-                              detail_string, 
-                              lat, 
-                              lon, 
+  Stop temp = StopConstructor(stop_id,
+                              stop_name,
+                              detail_string,
+                              lat,
+                              lon,
                               direction);
   stops->data[stops->count] = temp;
   stops->count+=1;
@@ -211,11 +231,11 @@ void AddRoute(const char *route_id,
               const char *stop_id_list,
               const char *description,
               Routes* routes) {
-      
-  APP_LOG(APP_LOG_LEVEL_INFO, 
-          "Creating route - route:%s, name:%s, stops:%s", 
-          route_id, 
-          routeName, 
+
+  APP_LOG(APP_LOG_LEVEL_INFO,
+          "Creating route - route:%s, name:%s, stops:%s",
+          route_id,
+          routeName,
           stop_id_list);
   Route* temp_routes = (Route*)malloc(sizeof(Route)*((routes->count)+1));
   if(temp_routes == NULL) {
@@ -226,30 +246,37 @@ void AddRoute(const char *route_id,
     free(routes->data);
   }
   routes->data = temp_routes;
-  Route temp_route = RouteConstructor(route_id, 
+  Route temp_route = RouteConstructor(route_id,
                                       routeName,
-                                      stop_id_list, 
+                                      stop_id_list,
                                       description);
   routes->data[routes->count] = temp_route;
   routes->count+=1;
 }
 
-Stop StopConstructor(const char* stop_id, 
-                     const char* stop_name, 
-                     const char* detail_string, 
-                     const sll lat, 
-                     const sll lon, 
+Stop StopConstructor(const char* stop_id,
+                     const char* stop_name,
+                     const char* detail_string,
+                     const sll lat,
+                     const sll lon,
                      const char* direction) {
-  
+
   Stop stop;
-  StringCopy(stop.stop_id, stop_id, ID_LENGTH);
-  StringCopy(stop.stop_name, stop_name, STOP_LENGTH);
-  StringCopy(stop.detail_string, detail_string, DESCRIPTION_LENGTH);
+  StringAllocateAndCopy(&stop.stop_id, stop_id);
+  StringAllocateAndCopy(&stop.stop_name, stop_name);
+  StringAllocateAndCopy(&stop.detail_string, detail_string);
   stop.lat = lat;
   stop.lon = lon;
-  StringCopy(stop.direction, direction, DIRECTION_LENGTH);
-  
+  StringAllocateAndCopy(&stop.direction, direction);
+
   return stop;
+}
+
+void StopDestructor(Stop* stop) {
+  FreeAndClearPointer((void**)&stop->stop_id);
+  FreeAndClearPointer((void**)&stop->stop_name);
+  FreeAndClearPointer((void**)&stop->detail_string);
+  FreeAndClearPointer((void**)&stop->direction);
 }
 
 void StopsInit(Stops *stops) {
@@ -258,33 +285,23 @@ void StopsInit(Stops *stops) {
 }
 
 void StopsDestructor(Stops *stops) {
+  for(uint32_t i = 0; i < stops->count; i++) {
+    StopDestructor(&stops->data[i]);
+  }
   stops->count = 0;
   FreeAndClearPointer((void**)&stops->data);
 }
 
-Route RouteConstructor(const char* route_id, 
-                       const char* route_name, 
-                       const char* stop_id_list, 
+Route RouteConstructor(const char* route_id,
+                       const char* route_name,
+                       const char* stop_id_list,
                        const char* direction) {
 
   Route t;
-  int i;
-
-  i = strlen(route_id);
-  t.route_id = (char *)malloc(sizeof(char)*(i+1));
-  StringCopy(t.route_id, route_id, i+1);
-
-  i = strlen(route_name);
-  t.route_name = (char *)malloc(sizeof(char)*(i+1));
-  StringCopy(t.route_name, route_name, i+1);
-
-  i = strlen(stop_id_list);
-  t.stop_id_list = (char *)malloc(sizeof(char)*(i+1));
-  StringCopy(t.stop_id_list, stop_id_list, i+1);
-
-  i = strlen(direction);
-  t.description = (char *)malloc(sizeof(char)*(i+1));
-  StringCopy(t.description, direction, i+1);
+  StringAllocateAndCopy(&t.route_id, route_id);
+  StringAllocateAndCopy(&t.route_name, route_name);
+  StringAllocateAndCopy(&t.stop_id_list, stop_id_list);
+  StringAllocateAndCopy(&t.description, direction);
 
   return t;
 }

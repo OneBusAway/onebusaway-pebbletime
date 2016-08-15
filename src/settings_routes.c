@@ -32,9 +32,10 @@ static void BuildRouteIndex(const Buses* buses) {
     //         s_nearby_routes.data[i].route_id,  
     //         s_nearby_routes.data[i].route_name);
 
-    // all stops in the stop_id_list are ',' terminated    
-    char stop_id[ID_LENGTH+1];
-    snprintf(stop_id, ID_LENGTH+1, "%s,", s_stop.stop_id);
+    // all stops in the stop_id_list are ',' terminated
+    int stop_size = strlen(s_stop.stop_id);  
+    char* stop_id = (char*)malloc(stop_size+1);
+    snprintf(stop_id, stop_size+1, "%s,", s_stop.stop_id);
 
     if(strstr(s_nearby_routes.data[i].stop_id_list, stop_id) != NULL) {
       RouteInfo* temp = (RouteInfo*)malloc(sizeof(RouteInfo) * 
@@ -53,6 +54,7 @@ static void BuildRouteIndex(const Buses* buses) {
           s_nearby_routes.data[i].route_id, buses) < 0 ? false : true;
       s_route_index.count+=1;
     }
+    free(stop_id);
   }
   // APP_LOG(APP_LOG_LEVEL_INFO, 
   //         "route index: %u routes indexed", 
@@ -119,14 +121,13 @@ static void DrawRowCallback(GContext *ctx,
       Route *r = &s_nearby_routes.data[i];
 
       const char* heart = "❤";
-      // APP_LOG(APP_LOG_LEVEL_INFO, "SIZEOF HEART:%u", strlen(heart));
       // TODO - fix the size of name to a better value
-      char name[10+ROUTE_SHORT_LENGTH];
+      char name[30];
       if(s_route_index.data[cell_index->row].favorite) {
-        snprintf(name, 10+ROUTE_SHORT_LENGTH,"%s %s", heart, r->route_name);
+        snprintf(name, 30, "%s %s", heart, r->route_name);
       }
       else {
-        snprintf(name, 10+ROUTE_SHORT_LENGTH,"%s", r->route_name);
+        snprintf(name, 30, "%s", r->route_name);
       }
       MenuCellDraw(ctx ,cell_layer, name, r->description);
     }

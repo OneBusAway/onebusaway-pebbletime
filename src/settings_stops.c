@@ -38,7 +38,8 @@ static void DrawRowCallback(GContext *ctx,
       menu_cell_basic_draw(ctx, cell_layer, "Sorry!", "No stops nearby.", NULL);
     }
     else {
-      char stopInfo[DESCRIPTION_LENGTH + 5];
+      // TOOD: arbitrary constant - consider removing
+      char stopInfo[55];
       Stop* s = &s_nearby_stops.data[cell_index->row];
       if(strlen(s->direction) > 0) {
         snprintf(stopInfo, 

@@ -76,6 +76,9 @@ static void ActionMenuCallback(ActionMenu* action_menu,
     ProgressWindowPush(appdata);
     
     // kick off request for routes for the stops
+    
+    // TOOD: memory leak - should have SendAppMessageGetRoutesForStop clean
+    // up the stop when it is done
     Stop stop = StopConstructor(s_content.bus.stop_id, 
                                 s_content.bus.stop_name, 
                                 "", 

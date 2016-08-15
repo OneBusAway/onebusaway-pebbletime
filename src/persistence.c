@@ -44,6 +44,31 @@ static bool RetryPersist(status_t result) {
   }
 }
 
+int PersistAllocateAndReadString(uint32_t key, char** dest) {
+  char* buffer = (char*)malloc(PERSIST_STRING_MAX_LENGTH);
+  if(buffer == NULL) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "NULL STRING POINTER");
+  }  
+  int ret = persist_read_string(key, 
+                                buffer, 
+                                PERSIST_STRING_MAX_LENGTH);
+  if(ret == E_DOES_NOT_EXIST) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, 
+            "Warning - persist_read_string error @ key %u",
+            (uint)key);
+  }
+  else {
+    *dest = (char*)malloc(strlen(buffer)+1);
+    if(*dest == NULL) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "NULL STRING POINTER");
+    }
+    strcpy(*dest, buffer);
+  }
+
+  free(buffer);
+  return ret;
+}
+
 void LoadBusesFromPersistence(Buses* buses) {
   // check storage for buses
   buses->count = 0;
@@ -73,6 +98,18 @@ void LoadBusesFromPersistence(Buses* buses) {
                   "Warning - persist_read_data error @ %u",
                   (uint)i);
         }
+        PersistAllocateAndReadString(PERSIST_KEY_ROUTE_ID+i,
+                                     &(buses->data[i].route_id));
+        PersistAllocateAndReadString(PERSIST_KEY_STOP_ID+i,
+                                     &(buses->data[i].stop_id));
+        PersistAllocateAndReadString(PERSIST_KEY_ROUTE_NAME+i,
+                                     &(buses->data[i].route_name));
+        PersistAllocateAndReadString(PERSIST_KEY_STOP_NAME+i,
+                                     &(buses->data[i].stop_name));
+        PersistAllocateAndReadString(PERSIST_KEY_DIRECTION+i,
+                                     &(buses->data[i].direction));
+        PersistAllocateAndReadString(PERSIST_KEY_DESCRIPTION+i,
+                                     &(buses->data[i].description));
       }
     }
     else {
@@ -96,22 +133,44 @@ void LoadBusesFromPersistence(Buses* buses) {
 //   persist_write_int(PERSIST_KEY_BUSES_COUNT, buses->count);
 // }
 
+// Delete persistent data for a given index
+void DeletePersistence(const uint i){
+  persist_delete(PERSIST_KEY_BUSES+i);
+  persist_delete(PERSIST_KEY_ROUTE_ID+i);
+  persist_delete(PERSIST_KEY_STOP_ID+i);
+  persist_delete(PERSIST_KEY_ROUTE_NAME+i);
+  persist_delete(PERSIST_KEY_STOP_NAME+i);
+  persist_delete(PERSIST_KEY_DIRECTION+i);
+  persist_delete(PERSIST_KEY_DESCRIPTION+i);
+}
+
+// Write a string to persistence, return success or failure
+bool PersistWriteString(const uint32_t key, const char* string) {
+  return (0 < persist_write_string(key, string));
+}
+
 // Save a single bus to persistence storage at the index passed into the
 // function. Returns success or failure of writing out to persistence.
 bool SaveBusToPersistence(const Bus* bus, const uint i) {
-  status_t e = E_AGAIN;
-  while(RetryPersist(e)) {
-    e = persist_write_data(PERSIST_KEY_BUSES+i, bus, sizeof(Bus));
+  bool retval = false;
+  if(0 < persist_write_data(PERSIST_KEY_BUSES+i, bus, sizeof(Bus))) {
+    // success
+    retval = true;    
   }
 
-  bool retval = false;
-  if(e > 0) {
-    retval = true;
-  }
-  else {
+  retval &= PersistWriteString(PERSIST_KEY_ROUTE_ID+i, bus->route_id);
+  retval &= PersistWriteString(PERSIST_KEY_STOP_ID+i, bus->stop_id);
+  retval &= PersistWriteString(PERSIST_KEY_ROUTE_NAME+i, bus->route_name);
+  retval &= PersistWriteString(PERSIST_KEY_STOP_NAME+i, bus->stop_name);
+  retval &= PersistWriteString(PERSIST_KEY_DIRECTION+i, bus->direction);
+  retval &= PersistWriteString(PERSIST_KEY_DESCRIPTION+i, bus->description);
+ 
+  if(!retval) {
     APP_LOG(APP_LOG_LEVEL_ERROR, 
             "SaveBusToPersistence - saving bus %u failed", 
             (uint)i);
+    // clean up anything that happened to have been saved
+    DeletePersistence(i);
   }
 
   return retval;
@@ -126,7 +185,7 @@ bool SaveBusCountToPersistence(uint32_t count) {
   }
 
   bool retval = false;
-  if(e > 0) {
+  if(0 < e) {
     retval = true;
   }
   else {
@@ -141,11 +200,13 @@ bool SaveBusCountToPersistence(uint32_t count) {
 // Remove a single bus from persistent storage using the buses' current
 // index. Assumes that the Buses passed in and the persistence are identical.
 // Only modifies the persistence; does not modify buses.
+// TODO: this uses the copy of buses to avoid reading and re-writing the 
+// persistance - probably should just do that to avoid consistency problems
 void DeleteBusFromPersistence(const Buses* buses, uint32_t index) {
   if((buses->data != NULL) && (buses->count > 0) && (index < buses->count)) {
     // delete the bus at the end of the storage 
     uint32_t count = buses->count-1;
-    persist_delete(PERSIST_KEY_BUSES+count);
+    DeletePersistence(count);
     
     // shift the buses
     for(uint32_t i = index; i < count; i++) {

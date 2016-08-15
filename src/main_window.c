@@ -308,7 +308,8 @@ static void DrawRowCallback(GContext *ctx,
               snprintf(time, sizeof(time), "%s", a->predicted_arrival);
             }
             
-            char stopInfo[DESCRIPTION_LENGTH + 5];
+            // TODO: arbitrary constant - consider removing 
+            char stopInfo[55];
             if(strlen(appdata->buses.data[i].direction) > 0) {
               snprintf(stopInfo, 
                        sizeof(stopInfo), 
