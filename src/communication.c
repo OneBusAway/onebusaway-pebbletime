@@ -55,6 +55,13 @@ const char *TranslateError(const AppMessageResult result) {
   }
 }
 
+static void CancelOutstandingRequests() {
+  s_outstanding_requests = 0;
+  s_skipped_arrival_updates = 0;
+  s_last_outstanding_request_at_skipped = 0;
+  s_transaction_id += 1;
+}
+
 static void NextTimer(AppData* appdata);
 
 static void UpdateArrivalsCallback(void *context) {
@@ -75,9 +82,7 @@ static void UpdateArrivalsCallback(void *context) {
               "timer: too many skipped updates, forcing update_arrivals()");
       
       // reset 
-      s_outstanding_requests = 0;
-      s_skipped_arrival_updates = 0;
-      s_last_outstanding_request_at_skipped = 0;
+      CancelOutstandingRequests();
       UpdateArrivals((AppData*)context);    
     }
   }
@@ -102,19 +107,21 @@ void StopArrivalsUpdateTimer() {
   }
 }
 
-static void SendAppMessageGetRoutesForStopCallback(void* context) {
-  Stop* stop = context;
-  SendAppMessageGetRoutesForStop(stop);
-}
+// static void SendAppMessageGetRoutesForStopCallback(void* context) {
+//   Stop* stop = context;
+//   SendAppMessageGetRoutesForStop(stop);
+// }
 
 void SendAppMessageGetRoutesForStop(Stop* stop) {
-  if(s_outstanding_requests > 0) {
-    // wait until the app message queue is clear
-    APP_LOG(APP_LOG_LEVEL_INFO, 
-            "SendAppMessageGetRoutesForStop: ...waiting...");
-    app_timer_register(1500, SendAppMessageGetRoutesForStopCallback, stop);
-    return;
-  }
+  // if(s_outstanding_requests > 0) {
+  //   // wait until the app message queue is clear
+  //   APP_LOG(APP_LOG_LEVEL_INFO, 
+  //           "SendAppMessageGetRoutesForStop: ...waiting...");
+  //   app_timer_register(1500, SendAppMessageGetRoutesForStopCallback, stop);
+  //   return;
+  // }
+  
+  CancelOutstandingRequests();
   
   APP_LOG(APP_LOG_LEVEL_ERROR, "SendAppMessageGetRoutesForStop: Sending...!");
 
@@ -135,7 +142,7 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
   DictionaryIterator *iterator;
   app_message_outbox_begin(&iterator);
 
-  s_transaction_id += 1;
+  // s_transaction_id += 1;
   APP_LOG(APP_LOG_LEVEL_INFO, 
           "----Initiated transaction id: %u",
           (uint)s_transaction_id);
@@ -152,12 +159,13 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
 }
 
 void SendAppMessageGetNearbyStops() {
-  if(s_outstanding_requests > 0) {
-    // wait until the app message queue is clear
-    APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageGetNearbyStops: ...waiting...");
-    app_timer_register(1500, SendAppMessageGetNearbyStops, NULL);
-    return;
-  }
+  // if(s_outstanding_requests > 0) {
+  //   // wait until the app message queue is clear
+  //   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageGetNearbyStops: ...waiting...");
+  //   app_timer_register(1500, SendAppMessageGetNearbyStops, NULL);
+  //   return;
+  // }
+  CancelOutstandingRequests();
 
   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageGetNearbyStops: Sending...!");
 
@@ -165,7 +173,7 @@ void SendAppMessageGetNearbyStops() {
   StopsDestructor(&s_nearby_stops);
   RoutesDestructor(&s_nearby_routes);
 
-  s_transaction_id += 1;
+  // s_transaction_id += 1;
   APP_LOG(APP_LOG_LEVEL_INFO, 
           "----Initiated transaction id: %u",
           (uint)s_transaction_id);
@@ -186,6 +194,8 @@ void SendAppMessageGetNearbyStops() {
 
 // TODO: ADD WAIT/RETRY LOGIC + OUTSTANDING REQUESTS BLOCK/LOCK
 static void SendAppMessageGetLocation() {
+  CancelOutstandingRequests();
+  
   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageGetLocation: Sending...!");
 
   // Prepare dictionary
@@ -214,19 +224,21 @@ static void FilterBusesByCachedLocation(Buses* buses) {
   }
 }
 
-static void SendAppMessageUpdateArrivals(Buses* buses);
+// static void SendAppMessageUpdateArrivals(Buses* buses);
 
-static void SendAppMessageUpdateArrivalsCallback(void* context) {
-  SendAppMessageUpdateArrivals(context);
-}
+// static void SendAppMessageUpdateArrivalsCallback(void* context) {
+//   SendAppMessageUpdateArrivals(context);
+// }
 
 static void SendAppMessageUpdateArrivals(Buses* buses) {
-  if(s_outstanding_requests > 0) {
-    // wait until the app message queue is clear
-    APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageUpdateArrivals: ...waiting...");
-    app_timer_register(1500, SendAppMessageUpdateArrivalsCallback, buses);
-    return;
-  }
+  // if(s_outstanding_requests > 0) {
+  //   // wait until the app message queue is clear
+  //   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageUpdateArrivals: ...waiting...");
+  //   app_timer_register(1500, SendAppMessageUpdateArrivalsCallback, buses);
+  //   return;
+  // }
+
+  CancelOutstandingRequests();
 
   // make sure any new/removed buses are (in)visible as they should be
   FilterBusesByCachedLocation(buses);
@@ -262,7 +274,7 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
   }
 
   if(busList != NULL) {
-    s_transaction_id += 1;
+    // s_transaction_id += 1;
     APP_LOG(APP_LOG_LEVEL_INFO,
             "----Initiated transaction id: %u",
             (uint)s_transaction_id);
@@ -442,8 +454,7 @@ static void HandleAppMessageNearbyRoutes(
 
     AppData* appdata = context;
     // active transaction? user canceled settings menu?
-    if((transaction_id_tuple->value->uint32 == s_transaction_id)
-       && appdata->show_settings) {
+    if(transaction_id_tuple->value->uint32 == s_transaction_id) {
        
       // TODO: A better way to resolve this would be to up the transaction
       // id upon canceled transactions instead of checking to see if 
@@ -453,7 +464,7 @@ static void HandleAppMessageNearbyRoutes(
 
       uint32_t items = items_remaining_tuple->value->uint32;
 
-       APP_LOG(APP_LOG_LEVEL_INFO, 
+      APP_LOG(APP_LOG_LEVEL_INFO, 
                "HandelAppMessageNearbyRoutes - items %u", 
                (uint)items);
 
@@ -464,19 +475,23 @@ static void HandleAppMessageNearbyRoutes(
 
         s_outstanding_requests = 0;
 
-        AppData* appdata = context;
-        if(message_type == kAppMessageNearbyRoutes) {
-          SettingsStopsStart(s_nearby_stops, 
-                             s_nearby_routes, 
-                             &appdata->buses);
-        }
-        else {
-          // kAppMessageRoutesForStop
-          SettingsRoutesStart(s_nearby_stops.data[0], 
+        // get rid of the progress window and show the settings window
+        if(appdata->show_settings) {
+          AppData* appdata = context;
+          if(message_type == kAppMessageNearbyRoutes) {
+            SettingsStopsStart(s_nearby_stops, 
                               s_nearby_routes, 
                               &appdata->buses);
+          }
+          else {
+            // kAppMessageRoutesForStop
+            SettingsRoutesStart(s_nearby_stops.data[0], 
+                                s_nearby_routes, 
+                                &appdata->buses);
+          }
+          
+          ProgressWindowRemove();
         }
-        ProgressWindowRemove();
       }
       else {
         AddRoute(route_id_tuple->value->cstring, 
