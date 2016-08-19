@@ -446,7 +446,8 @@ static void SelectCallback(
 static void WindowLoad(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-
+  APP_LOG(APP_LOG_LEVEL_ERROR, 
+              "bounds %u %u %u %u", bounds.origin.x, bounds.origin.y, bounds.size.h, bounds.size.w);
   s_menu_layer = menu_layer_create(bounds);
   if(s_menu_layer == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL MENU LAYER");

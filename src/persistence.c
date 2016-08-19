@@ -5,6 +5,7 @@ void PersistenceVersionControl() {
   persist_write_int(PERSIST_KEY_VERSION, PERSISTENCE_VERSION);
 }
 
+#ifndef RELEASE
 // Persistant storage error translator
 const char *TranslateStorageError(const status_t result) {
   switch (result) {
@@ -30,6 +31,7 @@ const char *TranslateStorageError(const status_t result) {
       return "UNKNOWN ERROR";
   }
 }
+#endif
 
 // check to see if a write call should retry upon failure
 static bool RetryPersist(status_t result) {

@@ -17,6 +17,7 @@ static uint32_t s_transaction_id;
 static uint32_t s_skipped_arrival_updates;
 static uint32_t s_last_outstanding_request_at_skipped;
 
+#ifndef RELEASE
 // AppMessage error translators
 const char *TranslateError(const AppMessageResult result) {
   switch (result) {
@@ -54,6 +55,7 @@ const char *TranslateError(const AppMessageResult result) {
       return "UNKNOWN ERROR";
   }
 }
+#endif
 
 static void CancelOutstandingRequests() {
   s_outstanding_requests = 0;
@@ -465,8 +467,8 @@ static void HandleAppMessageNearbyRoutes(
       uint32_t items = items_remaining_tuple->value->uint32;
 
       APP_LOG(APP_LOG_LEVEL_INFO, 
-               "HandelAppMessageNearbyRoutes - items %u", 
-               (uint)items);
+              "HandelAppMessageNearbyRoutes - items %u", 
+              (uint)items);
 
 
       if(items == 0) {

@@ -37,16 +37,16 @@ sll sllatan2(sll y, sll x) {
 
   sll a = slldiv(minyx, maxyx);
   sll s = sllmul(a, a);
-  sll r_1 = sllmul(dbl2sll((double)(-0.0464964749)), s);
-  sll r_2 = slladd(r_1, dbl2sll((double)0.15931422));
-  sll r_3 = sllsub(sllmul(r_2, s), dbl2sll((double)0.327622764));
+  sll r_1 = sllmul(dbl2sll((-0.0464964749)), s);
+  sll r_2 = slladd(r_1, dbl2sll(0.15931422));
+  sll r_3 = sllsub(sllmul(r_2, s), dbl2sll(0.327622764));
   sll r = slladd(sllmul(sllmul(r_3, s), a), a);
 
   if(sllabs(y) > sllabs(x)) {
-    r = sllsub(dbl2sll((double)1.57079637), r);
+    r = sllsub(CONST_PI_2, r);
   }
   if(x < CONST_0) {
-    r = sllsub(dbl2sll((double)3.14159274), r);
+    r = sllsub(CONST_PI, r);
   }
   if(y < CONST_0) {
     r = sllneg(r);
@@ -98,9 +98,4 @@ sll DistanceBetweenSLL(sll lat1, sll lon1, sll lat2, sll lon2) {
   sll result = sllmul2(sllatan2(d_sqrt, d_sqrt_1));
 
   return sllmul(R,result);
-}
-
-double DistanceBetween(double lat1, double lon1, double lat2, double lon2) {
-  return sll2dbl(DistanceBetweenSLL(
-    dbl2sll(lat1), dbl2sll(lon1), dbl2sll(lat2), dbl2sll(lon2)));
 }
