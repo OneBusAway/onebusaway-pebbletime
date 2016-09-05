@@ -18,6 +18,23 @@ void ListBuses(const Buses* buses) {
 #endif
 }
 
+void ListStops(const Stops* stops) {
+#ifndef RELEASE  
+  APP_LOG(APP_LOG_LEVEL_INFO, "Number of stops:%u", (uint)stops->count);
+  for(uint32_t i = 0; i < stops->count; i++)  {
+    Stop* s = MemListGet(stops->memlist, i);
+    APP_LOG(APP_LOG_LEVEL_INFO,
+            "%u - index:%u\tstop_id:%s\tname:%s\tdetails:%s\tdir:%s",
+            (uint)i,
+            (uint)s->index,
+            s->stop_id,
+            s->stop_name,
+            s->detail_string,
+            s->direction);
+  }
+#endif
+}
+
 void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Filtering buses by location:");
   buses->filter_count = 0;
@@ -194,7 +211,8 @@ void RemoveBus(uint32_t index, Buses *buses) {
   buses->count-=1;
 }
 
-void AddStop(const char* stop_id,
+void AddStop(const uint16_t index,
+             const char* stop_id,
              const char* stop_name,
              const char* detail_string,
              const sll lat,
@@ -203,27 +221,38 @@ void AddStop(const char* stop_id,
              Stops* stops) {
 
   APP_LOG(APP_LOG_LEVEL_INFO,
-          "Creating stop - stop:%s, name:%s, details:%s",
+          "Creating stop - index: %u, stop:%s, name:%s, details:%s",
+          (uint)index,
           stop_id,
           stop_name,
           detail_string);
-  Stop* temp_stops = (Stop *)malloc(sizeof(Stop)*((stops->count)+1));
-  if(temp_stops == NULL) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "NULL STOP POINTER");
-  }
-  if(stops->data != NULL) {
-    memcpy(temp_stops, stops->data, sizeof(Stop)*(stops->count));
-    free(stops->data);
-  }
-  stops->data = temp_stops;
-  Stop temp = StopConstructor(stop_id,
+
+  Stop temp = StopConstructor(index,
+                              stop_id,
                               stop_name,
                               detail_string,
                               lat,
                               lon,
                               direction);
-  stops->data[stops->count] = temp;
+  int16_t pos = -1;
+  for(int16_t i = 0; i < MemListCount(stops->memlist); i++) {
+    Stop* stop = (Stop*)MemListGet(stops->memlist, i);
+    if(stop->index > index) {
+      pos = i;
+      break;
+    }
+  }
+  
+  if(pos == -1) {
+    MemListAppend(stops->memlist, &temp);
+  }
+  else {
+    MemListInsertAfter(stops->memlist, &temp, pos);
+  }
+  
   stops->count+=1;
+  
+  ListStops(stops);
 }
 
 void AddRoute(const char *route_id,
@@ -254,7 +283,8 @@ void AddRoute(const char *route_id,
   routes->count+=1;
 }
 
-Stop StopConstructor(const char* stop_id,
+Stop StopConstructor(const uint16_t index,
+                     const char* stop_id,
                      const char* stop_name,
                      const char* detail_string,
                      const sll lat,
@@ -262,6 +292,7 @@ Stop StopConstructor(const char* stop_id,
                      const char* direction) {
 
   Stop stop;
+  stop.index = index;
   StringAllocateAndCopy(&stop.stop_id, stop_id);
   StringAllocateAndCopy(&stop.stop_name, stop_name);
   StringAllocateAndCopy(&stop.detail_string, detail_string);
@@ -279,17 +310,17 @@ void StopDestructor(Stop* stop) {
   FreeAndClearPointer((void**)&stop->direction);
 }
 
-void StopsInit(Stops *stops) {
+void StopsConstructor(Stops *stops) {
   stops->count = 0;
-  stops->data = NULL;
+  stops->memlist = MemListCreate(sizeof(Stop));
 }
 
 void StopsDestructor(Stops *stops) {
-  for(uint32_t i = 0; i < stops->count; i++) {
-    StopDestructor(&stops->data[i]);
+  for(uint32_t i = 0; i < MemListCount(stops->memlist); i++) {
+    StopDestructor((Stop*)MemListGet(stops->memlist, i));
   }
   stops->count = 0;
-  FreeAndClearPointer((void**)&stops->data);
+  MemListClear(stops->memlist);
 }
 
 Route RouteConstructor(const char* route_id,
@@ -321,7 +352,7 @@ void RoutesDestructor(Routes *r) {
   r->count = 0;
 }
 
-void RoutesInit(Routes *r) {
+void RoutesConstructor(Routes *r) {
   r->data = NULL;
   r->count = 0;
 }

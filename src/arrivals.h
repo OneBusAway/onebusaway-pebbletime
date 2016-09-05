@@ -2,6 +2,7 @@
 #define ARRIVALS_H
 
 #include "buses.h"
+#include "memlist.h"
 
 typedef struct Arrival {
   char* trip_id;
@@ -13,10 +14,12 @@ typedef struct Arrival {
   char arrival_code;
 } __attribute__((__packed__)) Arrival;
 
-typedef struct Arrivals {
-  uint32_t count;
-  Arrival* data;
-} __attribute__((__packed__)) Arrivals;
+typedef MemList Arrivals;
+
+// typedef struct Arrivals {
+//   uint32_t count;
+//   Arrival* data;
+// } __attribute__((__packed__)) Arrivals;
 
 void ListArrivals(const Arrivals* arrivals);
 void AddArrival(const char* stop_id, 
@@ -38,7 +41,8 @@ Arrival ArrivalConstructor(const char* trip_id,
                            const char arrival_code);
 Arrival ArrivalCopy(const Arrival*);
 void ArrivalDestructor(Arrival*);
-void ArrivalsInit(Arrivals*);
+Arrivals* ArrivalsCopy(const Arrivals*);
+void ArrivalsConstructor(Arrivals**);
 void ArrivalsDestructor(Arrivals*);
 GColor ArrivalColor(const Arrival);
 const char* ArrivalText(const Arrival);

@@ -10,7 +10,7 @@
 
 void MainWindowInit(AppData* appdata);
 void MainWindowDeinit();
-void MainWindowUpdateArrivals(const Arrivals* new_arrivals, AppData* appdata);
+void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata);
 void MainWindowRefreshData(AppData* appdata);
 void MainWindowCancelSettingsLoad(AppData* appdata);
 

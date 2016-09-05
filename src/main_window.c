@@ -53,16 +53,18 @@ static void UpdateLoadingFlag(AppData* appdata) {
   menu_layer_reload_data(s_menu_layer);
 }
 
-void MainWindowUpdateArrivals(const Arrivals* new_arrivals, AppData* appdata) {
+void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata) {
   // try to keep the same arrival selected in the menu across refreshes
   MenuIndex m = menu_layer_get_selected_index(s_menu_layer);
   if(m.section == 0) {
-    if(m.row < appdata->arrivals.count) {
-      char* trip_id = appdata->arrivals.data[m.row].trip_id;
+    if(m.row < appdata->arrivals->count) {
+      Arrival* arrival = MemListGet(appdata->arrivals, m.row);
+      char* trip_id = arrival->trip_id;
 
       MenuIndex set = MenuIndex(0,0);
       for(uint i = 0; i < new_arrivals->count; i++) {
-        if(strcmp(new_arrivals->data[i].trip_id, trip_id) == 0) {
+        Arrival* new_arrival = MemListGet(new_arrivals, i);
+        if(strcmp(new_arrival->trip_id, trip_id) == 0) {
           set.row = i;
           break;
         }
@@ -73,8 +75,8 @@ void MainWindowUpdateArrivals(const Arrivals* new_arrivals, AppData* appdata) {
   }
 
   // move the temp arrivals to the display arrivals
-  ArrivalsDestructor(&appdata->arrivals);
-  appdata->arrivals = *new_arrivals;
+  ArrivalsDestructor(appdata->arrivals);
+  appdata->arrivals = ArrivalsCopy(new_arrivals);
 
   // update the the bus detals window, if it's being shown
   BusDetailsWindowUpdate(appdata);
@@ -100,8 +102,8 @@ static uint16_t GetNumRowsCallback(MenuLayer *menu_layer,
   switch (section_index) {
     // bus list
     case 0:
-      return (!s_loading && appdata->arrivals.count > 0) ? 
-              appdata->arrivals.count : 1;
+      return (!s_loading && appdata->arrivals->count > 0) ? 
+              appdata->arrivals->count : 1;
       break;
     // settings
     case 1:
@@ -256,9 +258,9 @@ static void DrawRowCallback(GContext *ctx,
       // not currently loading buses
       else {
         //if(cell_index->row <= appdata->buses.filter_count) {
-        if(cell_index->row <= appdata->arrivals.count) {
+        if(cell_index->row <= appdata->arrivals->count) {
           // no nearby routes
-          if(appdata->arrivals.count == 0) {
+          if(appdata->arrivals->count == 0) {
             if(appdata->buses.count != 0 && appdata->buses.filter_count == 0) {
               menu_cell_basic_draw(ctx, 
                                    cell_layer, 
@@ -283,7 +285,7 @@ static void DrawRowCallback(GContext *ctx,
           }
           // display nearby route details
           else {
-            Arrival* a = &appdata->arrivals.data[cell_index->row];
+            Arrival* a = MemListGet(appdata->arrivals, cell_index->row);
             
             // TODO: does this need size checking?
             uint i = a->bus_index;
@@ -362,7 +364,7 @@ static int16_t GetCellHeightCallback(struct MenuLayer *menu_layer,
         
   AppData* appdata = context;
 
-  if(cell_index->section == 1 || appdata->arrivals.count == 0) {
+  if(cell_index->section == 1 || appdata->arrivals->count == 0) {
     return MENU_CELL_HEIGHT;}
   else {
   #if defined(PBL_ROUND)
@@ -386,10 +388,10 @@ static void SelectCallback(
     case 0:
       // While loading at first launch, don't allow interaction on the routes
       if(!s_loading) {
-        if(cell_index->row <= appdata->arrivals.count) {
+        if(cell_index->row <= appdata->arrivals->count) {
           // special case: no nearby buses to show,
           // show Add Route shortcut instead.
-          if(appdata->arrivals.count == 0) {
+          if(appdata->arrivals->count == 0) {
             // Start progress window
             appdata->show_settings = true;
             ProgressWindowPush(appdata);
@@ -399,15 +401,17 @@ static void SelectCallback(
           else {
             // record the trip_id of the bus selected, to put the menu
             // cursor back in the right place when returning to this window
-            uint i = appdata->arrivals.data[cell_index->row].bus_index;
+            Arrival* arrival = (Arrival*)MemListGet(appdata->arrivals, 
+                cell_index->row);
+            uint i = arrival->bus_index;
             FreeAndClearPointer((void**)&s_last_selected_trip_id);
-            char* trip_id = appdata->arrivals.data[cell_index->row].trip_id;
+            char* trip_id = arrival->trip_id;
             s_last_selected_trip_id = (char*)malloc(strlen(trip_id)+1);
             StringCopy(s_last_selected_trip_id, trip_id, strlen(trip_id)+1);
 
             // show the detail window for the bus selected
             BusDetailsWindowPush(appdata->buses.data[i], 
-                                 &appdata->arrivals.data[cell_index->row], 
+                                 arrival, 
                                  appdata);
           }
         }
@@ -513,9 +517,9 @@ static void WindowAppear(Window *window) {
     // another window
     MenuIndex m = MenuIndex(0,0);
     if(s_last_selected_trip_id != NULL) {
-      for(uint i = 0; i < appdata->arrivals.count; i++) {
-        if(strcmp(appdata->arrivals.data[i].trip_id, 
-            s_last_selected_trip_id) == 0) {
+      for(uint i = 0; i < appdata->arrivals->count; i++) {
+        Arrival* arrival = (Arrival*)MemListGet(appdata->arrivals, i);
+        if(strcmp(arrival->trip_id, s_last_selected_trip_id) == 0) {
           m.row = i;
           break;
         }

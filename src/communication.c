@@ -9,7 +9,7 @@
 static AppTimer *s_timer;
 static Stops s_nearby_stops;
 static Routes s_nearby_routes;
-static Arrivals s_temp_arrivals;
+static Arrivals *s_temp_arrivals;
 static sll s_cached_lat;
 static sll s_cached_lon;
 static uint32_t s_outstanding_requests;
@@ -129,7 +129,8 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
 
   // clear out existing nearby stops and add the single stop
   StopsDestructor(&s_nearby_stops);
-  AddStop(stop->stop_id, 
+  AddStop(0 /*index*/,
+          stop->stop_id, 
           stop->stop_name, 
           stop->detail_string,
           stop->lat, 
@@ -160,25 +161,17 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
   app_message_outbox_send();  
 }
 
-void SendAppMessageGetNearbyStops() {
+void SendAppMessageGetNearbyStops(uint32_t index) {
   // if(s_outstanding_requests > 0) {
   //   // wait until the app message queue is clear
   //   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageGetNearbyStops: ...waiting...");
   //   app_timer_register(1500, SendAppMessageGetNearbyStops, NULL);
   //   return;
   // }
-  CancelOutstandingRequests();
 
-  APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageGetNearbyStops: Sending...!");
-
-  // clear out existing nearby stops, routes
-  StopsDestructor(&s_nearby_stops);
-  RoutesDestructor(&s_nearby_routes);
-
-  // s_transaction_id += 1;
   APP_LOG(APP_LOG_LEVEL_INFO, 
-          "----Initiated transaction id: %u",
-          (uint)s_transaction_id);
+      "SendAppMessageGetNearbyStops: Sending, index: %u",
+      (uint)index);
 
   s_outstanding_requests = 1;
 
@@ -189,9 +182,27 @@ void SendAppMessageGetNearbyStops() {
   // Write data
   dict_write_uint32(iterator, kAppMessageMessageType, kAppMessageNearbyStops);
   dict_write_uint32(iterator, kAppMessageTransactionId, s_transaction_id);
+  dict_write_uint32(iterator, kAppMessageIndex, index);
 
   // Send data
   app_message_outbox_send();
+}
+
+void SendAppMessageInitiateGetNearbyStops() {
+  APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageInitiateGetNearbyStops - start");
+  
+  CancelOutstandingRequests();
+  
+  // s_transaction_id += 1;
+  APP_LOG(APP_LOG_LEVEL_INFO, 
+          "----Initiated transaction id: %u",
+          (uint)s_transaction_id);
+
+  // clear out existing nearby stops, routes
+  StopsDestructor(&s_nearby_stops);
+  RoutesDestructor(&s_nearby_routes);
+
+  SendAppMessageGetNearbyStops(0);
 }
 
 // TODO: ADD WAIT/RETRY LOGIC + OUTSTANDING REQUESTS BLOCK/LOCK
@@ -246,7 +257,7 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
   FilterBusesByCachedLocation(buses);
 
   // clear temp arrivals before getting new ones
-  ArrivalsDestructor(&s_temp_arrivals);
+  ArrivalsDestructor(s_temp_arrivals);
 
   // build the strings of stop/route pairs
   char* busList = NULL;
@@ -303,7 +314,7 @@ void UpdateArrivals(AppData* appdata) {
   if((appdata->buses.count == 0) || appdata->show_settings) {
     // reset/clear arrivals if there are no buses at all, or a reset of the
     // view has been triggered
-    ArrivalsDestructor(&appdata->arrivals);
+    ArrivalsDestructor(appdata->arrivals);
   }
   else {
     SendAppMessageUpdateArrivals(&appdata->buses);
@@ -354,7 +365,7 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
                    arrival_delta_tuple->value->int32,
                    *(arrivalCode_tuple->value->cstring),
                    &appdata->buses,
-                   &s_temp_arrivals);
+                   s_temp_arrivals);
       }
 
       if(s_outstanding_requests == 0) {
@@ -362,11 +373,10 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
                 "----Completed transaction id: %u",
                 (uint)s_transaction_id);
 
-        MainWindowUpdateArrivals(&s_temp_arrivals, appdata);
+        MainWindowUpdateArrivals(s_temp_arrivals, appdata);
          
         // prevent a double free later
-        s_temp_arrivals.data = NULL;
-        s_temp_arrivals.count = 0;
+        ArrivalsDestructor(s_temp_arrivals);
       }
     }
   }
@@ -387,10 +397,11 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
   Tuple *lon_tuple = dict_find(iterator, kAppMessageLon);
   Tuple *direction_tuple = dict_find(iterator, kAppMessageDirection);
   Tuple *transaction_id_tuple = dict_find(iterator, kAppMessageTransactionId);
+  Tuple *index_tuple = dict_find(iterator, kAppMessageIndex);
       
   if(stop_id_tuple && items_remaining_tuple && stop_name_tuple &&
      route_list_string_tuple && lat_tuple && lon_tuple
-     && direction_tuple && transaction_id_tuple) {
+     && direction_tuple && transaction_id_tuple && index_tuple) {
 
     AppData* appdata = context;
     // active transaction? user canceled settings menu?
@@ -411,7 +422,8 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
       
       // TODO: check for cohearancy - don't just create a stop
       // every time, but check that it's happening in order.
-      AddStop(stop_id_tuple->value->cstring,
+      AddStop(index_tuple->value->uint16,
+              stop_id_tuple->value->cstring,
               stop_name_tuple->value->cstring, 
               route_list_string_tuple->value->cstring,
               sll_lat, 
@@ -467,7 +479,7 @@ static void HandleAppMessageNearbyRoutes(
       uint32_t items = items_remaining_tuple->value->uint32;
 
       APP_LOG(APP_LOG_LEVEL_INFO, 
-              "HandelAppMessageNearbyRoutes - items %u", 
+              "HandleAppMessageNearbyRoutes - items %u", 
               (uint)items);
 
 
@@ -487,7 +499,8 @@ static void HandleAppMessageNearbyRoutes(
           }
           else {
             // kAppMessageRoutesForStop
-            SettingsRoutesStart(s_nearby_stops.data[0], 
+            Stop stop = *(Stop*)MemListGet(s_nearby_stops.memlist, 0);
+            SettingsRoutesStart(stop, 
                                 s_nearby_routes, 
                                 &appdata->buses);
           }
@@ -589,20 +602,20 @@ static void InboxReceivedCallback(DictionaryIterator *iterator,
 
 static void InboxDroppedCallback(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Incoming message dropped!");
-  APP_LOG(APP_LOG_LEVEL_INFO, 
-          "In dropped: %i - %s",
-          reason, 
-          TranslateError(reason));
+  // APP_LOG(APP_LOG_LEVEL_INFO, 
+  //         "In dropped: %i - %s",
+  //         reason, 
+  //         TranslateError(reason));
 }
 
 static void OutboxFailedCallback(DictionaryIterator *iterator,
                                  AppMessageResult reason,
                                  void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
-  APP_LOG(APP_LOG_LEVEL_INFO, 
-          "In failed: %i - %s", 
-          reason, 
-          TranslateError(reason));
+  // APP_LOG(APP_LOG_LEVEL_INFO, 
+  //         "In failed: %i - %s", 
+  //         reason, 
+  //         TranslateError(reason));
       
   // Retry forever
   // TODO: consider limiting this so it doesn't retry forever.
@@ -616,9 +629,9 @@ static void OutboxSentCallback(DictionaryIterator *iterator, void *context) {
 
 void CommunicationInit(AppData* appdata) {
   s_timer = NULL;
-  StopsInit(&s_nearby_stops);
-  RoutesInit(&s_nearby_routes);
-  ArrivalsInit(&s_temp_arrivals);
+  StopsConstructor(&s_nearby_stops);
+  RoutesConstructor(&s_nearby_routes);
+  ArrivalsConstructor(&s_temp_arrivals);
   s_cached_lat = CONST_0;
   s_cached_lon = CONST_0;
   s_outstanding_requests = 0;
@@ -642,6 +655,6 @@ void CommunicationDeinit() {
   StopArrivalsUpdateTimer();
   StopsDestructor(&s_nearby_stops);
   RoutesDestructor(&s_nearby_routes);
-  ArrivalsDestructor(&s_temp_arrivals);
+  ArrivalsDestructor(s_temp_arrivals);
   app_message_deregister_callbacks();
 }

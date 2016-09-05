@@ -6,7 +6,7 @@
 
 typedef struct {
   Buses buses;
-  Arrivals arrivals;
+  Arrivals* arrivals;
   bool show_settings;
   bool initialized;
 } AppData;

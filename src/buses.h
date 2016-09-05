@@ -3,6 +3,7 @@
 
 #include <pebble.h>
 #include <pebble-math-sll/math-sll.h>
+#include "memlist.h"
 
 // #define ID_LENGTH 20
 // #define DIRECTION_LENGTH 5
@@ -39,6 +40,7 @@ typedef struct {
 } __attribute__((__packed__)) Buses;
 
 typedef struct {
+  uint16_t index;
   char* stop_id;
   char* stop_name;
   char* detail_string;
@@ -48,7 +50,7 @@ typedef struct {
 } __attribute__((__packed__)) Stop;
 
 typedef struct {
-  Stop* data;
+  MemList* memlist;
   uint32_t count;
 } __attribute__((__packed__)) Stops;
 
@@ -73,7 +75,8 @@ void RemoveBus(uint32_t index, Buses *buses);
 int32_t GetBusIndex(const char* stop_id,
                     const char* route_id,
                     const Buses* buses);
-void AddStop(const char* stop_id,
+void AddStop(const uint16_t index,
+             const char* stop_id,
              const char* stop_name,
              const char* detail_string,
              const sll lat,
@@ -85,20 +88,21 @@ void AddRoute(const char *route_id,
               const char *stop_id_list,
               const char *description,
               Routes* routes);
-Stop StopConstructor(const char* stop_id,
+Stop StopConstructor(const uint16_t index,
+                     const char* stop_id,
                      const char* stop_name,
                      const char* detail_string,
                      const sll lat,
                      const sll lon,
                      const char* direction);
-void StopsInit(Stops* stops);
+void StopsConstructor(Stops* stops);
 void StopsDestructor(Stops* stops);
 Route RouteConstructor(const char* route_id,
                        const char* route_name,
                        const char* stop_id_list,
                        const char* description);
 void RouteDestructor(Route *t);
-void RoutesInit(Routes *r);
+void RoutesConstructor(Routes *r);
 void RoutesDestructor(Routes *r);
 
 #endif /* end of include guard: BUSES_H */

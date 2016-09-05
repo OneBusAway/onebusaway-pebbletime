@@ -30,7 +30,8 @@ enum AppMessageKeys {
   kAppMessagePredicted,
   kAppMessageTripId,
   kAppMessagebusList,
-  kAppMessageArrivalDeltaString
+  kAppMessageArrivalDeltaString,
+  kAppMessageIndex
 };
 
 // Enumerations for kAppMessageMessageType

@@ -79,7 +79,8 @@ static void ActionMenuCallback(ActionMenu* action_menu,
     
     // TOOD: memory leak - should have SendAppMessageGetRoutesForStop clean
     // up the stop when it is done
-    Stop stop = StopConstructor(s_content.bus.stop_id, 
+    Stop stop = StopConstructor(0,
+                                s_content.bus.stop_id, 
                                 s_content.bus.stop_name, 
                                 "", 
                                 s_content.bus.lat,
@@ -572,11 +573,12 @@ void BusDetailsWindowUpdate(AppData* appdata) {
   const char* trip_id = BusDetailsWindowGetTripId();
   
   if(trip_id != NULL) {
-    for(uint i = 0; i < appdata->arrivals.count; i++) {
-      if(strcmp(appdata->arrivals.data[i].trip_id, trip_id) == 0) {
-        uint32_t bus_index = appdata->arrivals.data[i].bus_index;
+    for(uint i = 0; i < appdata->arrivals->count; i++) {
+      Arrival* arrival = (Arrival*)MemListGet(appdata->arrivals, i);
+      if(strcmp(arrival->trip_id, trip_id) == 0) {
+        uint32_t bus_index = arrival->bus_index;
         BusDetailsWindowUpdateContent(appdata->buses.data[bus_index], 
-                                      &appdata->arrivals.data[i]);
+                                      arrival);
         break;
       }
     }

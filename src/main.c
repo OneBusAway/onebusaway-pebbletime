@@ -25,7 +25,7 @@ static void HandleInit(AppData* appdata) {
   // Initialize app data
   appdata->initialized = false;
   appdata->show_settings = true;
-  ArrivalsInit(&appdata->arrivals);
+  ArrivalsConstructor(&appdata->arrivals);
   LoadBusesFromPersistence(&appdata->buses);
 
   // Initialize app message communication
@@ -47,7 +47,7 @@ static void HandleDeinit(AppData* appdata) {
   SettingsRoutesDeinit();
   SettingsStopsDeinit();
   BusesDestructor(&appdata->buses);
-  ArrivalsDestructor(&appdata->arrivals);
+  ArrivalsDestructor(appdata->arrivals);
   CommunicationDeinit();
   MainWindowDeinit();
 }

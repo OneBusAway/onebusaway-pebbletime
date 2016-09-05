@@ -489,7 +489,8 @@ function sendStopsToPebble(stops,
                            routes,
                            stopStrings,
                            routeStrings,
-                           transactionId) {
+                           transactionId,
+                           index) {
 
   if((stops.length === 0) || (transactionId != currentTransaction)) {
     // completed sending stops to the pebble; now send corresponding routes.
@@ -516,17 +517,18 @@ function sendStopsToPebble(stops,
       'AppMessage_routeListString': routeList,
       'AppMessage_direction': direction,
       'AppMessage_transactionId': transactionId,
-      'AppMessage_messageType': 1 // nearby stops
+      'AppMessage_messageType': 1, // nearby stops
+      'AppMessage_index': index
     };
 
-    console.log('sendStopsToPebble: sending - ' + stop.id + ',' +
+    console.log('sendStopsToPebble: sending - ' + index + ") " + stop.id + ',' +
       stop.name + ',' + routeList);
 
     // Send to Pebble
     sendAppMessage(dictionary,
       function() {
         sendStopsToPebble(stops, routes, stopStrings, routeStrings,
-          transactionId);
+          transactionId, index+1);
       }
     );
   }
@@ -728,7 +730,7 @@ function getLocationSuccess(attempts, pos) {
  * requests the bus stops near the current GPS coordinates and sends the
  * stops and routes to the watch
  */
-function getNearbyStopsLocationSuccess(pos, transactionId) {
+function getNearbyStopsLocationSuccess(pos, transactionId, index) {
   var lat = pos.coords.latitude;
   var lon = pos.coords.longitude;
 
@@ -766,16 +768,16 @@ function getNearbyStopsLocationSuccess(pos, transactionId) {
 
         // TODO: trim stops to max length to prevent out of memory errors on the
         // watch; or, better solution, paginate the results
-        if(stops.length > MAX_STOPS) {
-          var diff = stops.length - MAX_STOPS;
-          console.log("---WARNING--- cutting stop length from " + stops.length +
-            " to " + MAX_STOPS);
-          stops.splice((-1)*diff, diff);
-        }
+        // if(stops.length > MAX_STOPS) {
+        //   var diff = stops.length - MAX_STOPS;
+        //   console.log("---WARNING--- cutting stop length from " + stops.length +
+        //     " to " + MAX_STOPS);
+        //   stops.splice((-1)*diff, diff);
+        // }
 
         // return the full list up to the max length requested by the watch
         sendStopsToPebble(stops, routes, stopStrings, routeStrings,
-          transactionId);
+          transactionId, index);
       }
     }
   );
@@ -846,10 +848,10 @@ function getLocation() {
  * gets the nearby OBA stops based on the current location and sends the
  * results to the watch
  */
-function getNearbyStops(transactionId) {
+function getNearbyStops(transactionId, index) {
   navigator.geolocation.getCurrentPosition(
       function(pos) {
-        getNearbyStopsLocationSuccess(pos, transactionId);
+        getNearbyStopsLocationSuccess(pos, transactionId, index);
       },
       function(e) {
         console.log("Error requesting location!");
@@ -892,8 +894,9 @@ Pebble.addEventListener('appmessage',
         break;
       case 1: // get nearyby stops
         currentTransaction = e.payload.AppMessage_transactionId;
-         getNearbyStops(e.payload.AppMessage_transactionId);
-         break;
+        var index = e.payload.AppMessage_index;
+        getNearbyStops(e.payload.AppMessage_transactionId, index);
+        break;
       case 3: // get location
         getLocation();
         break;

@@ -6,14 +6,14 @@ void ListArrivals(const Arrivals* arrivals) {
 #ifndef RELEASE
   APP_LOG(APP_LOG_LEVEL_INFO, "Number of arrivals:%u", (uint)arrivals->count);
   for(uint32_t i = 0; i < arrivals->count; i++)  {
-    Arrival a = arrivals->data[i];
+    Arrival* a = (Arrival*)MemListGet(arrivals, i);
     
     APP_LOG(APP_LOG_LEVEL_INFO, 
             "%u - index:%u\tdelta:%s\tds:%i",
             (uint)i, 
-            (uint)a.bus_index, 
-            a.delta_string, 
-            (int)a.delta);
+            (uint)a->bus_index, 
+            a->delta_string, 
+            (int)a->delta);
   }
 #endif
 }
@@ -27,7 +27,7 @@ void AddArrival(const char* stop_id,
                 const int32_t arrival_delta,
                 const char arrival_code,
                 const Buses* buses,
-                Arrivals* arrival) {
+                Arrivals* arrivals) {
 
   int32_t index = GetBusIndex(stop_id, route_id, buses);
 
@@ -35,35 +35,33 @@ void AddArrival(const char* stop_id,
     return;
   }
 
-  // insertion sort, smallest to largest
-  uint i = 0;
-  while((i < arrival->count) && (arrival->data[i].delta < arrival_delta)) {
-    i++;
+  Arrival temp = ArrivalConstructor(trip_id, 
+                                    scheduled_string, 
+                                    predicted_string, 
+                                    arrival_string, 
+                                    arrival_delta, 
+                                    index, 
+                                    arrival_code);
+
+  int16_t pos = -1;
+  for(int16_t i = 0; i < MemListCount(arrivals); i++) {
+    Arrival* arrival = (Arrival*)MemListGet(arrivals, i);
+    if(arrival->delta > arrival_delta) {
+      pos = i;
+      break;
+    }
   }
-
-  // copy beginning of list
-  Arrival* temp_arrival = (Arrival*)malloc(sizeof(Arrival)*(arrival->count+1));
-  memcpy(temp_arrival, arrival->data, sizeof(Arrival)*i);
-  // insert
-  temp_arrival[i] = ArrivalConstructor(trip_id, 
-                                       scheduled_string, 
-                                       predicted_string, 
-                                       arrival_string, 
-                                       arrival_delta, 
-                                       index, 
-                                       arrival_code);
-  // copy end of list
-  memcpy(&temp_arrival[i+1], 
-         &arrival->data[i], 
-         sizeof(Arrival)*(arrival->count-i));
-
-  FreeAndClearPointer((void**)&arrival->data);
-  arrival->data = temp_arrival;
-  arrival->count += 1;
+  
+  if(pos == -1) {
+    MemListAppend(arrivals, &temp);
+  }
+  else {
+    MemListInsertAfter(arrivals, &temp, pos);
+  }
 
   APP_LOG(APP_LOG_LEVEL_INFO, 
           "AddArrival: @%u index:%u delta:%s",
-          (uint)i, 
+          (uint)pos, 
           (uint)index, 
           arrival_string);
 }
@@ -114,17 +112,21 @@ void ArrivalDestructor(Arrival* arrival) {
   FreeAndClearPointer((void**)&arrival->delta_string);
 }
 
-void ArrivalsInit(Arrivals* arrival) {
-  arrival->count = 0;
-  arrival->data = NULL;
+Arrivals* ArrivalsCopy(const Arrivals* arrivals) {
+  return MemListCopy(arrivals);
 }
 
-void ArrivalsDestructor(Arrivals* arrival) {
-  for(uint32_t i = 0; i < arrival->count; i++) {
-    ArrivalDestructor(&arrival->data[i]);
-  }
-  FreeAndClearPointer((void**)&arrival->data);
-  arrival->count = 0;
+void ArrivalsConstructor(Arrivals** arrivals) {
+  *arrivals = MemListCreate(sizeof(Arrival));
+}
+
+void ArrivalsDestructor(Arrivals* arrivals) {
+  MemListClear(arrivals);
+  // for(uint32_t i = 0; i < arrival->count; i++) {
+  //   ArrivalDestructor(&arrival->data[i]);
+  // }
+  // FreeAndClearPointer((void**)&arrival->data);
+  // arrival->count = 0;
 }
 
 GColor ArrivalColor(const Arrival arrival) {

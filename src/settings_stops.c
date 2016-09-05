@@ -40,7 +40,7 @@ static void DrawRowCallback(GContext *ctx,
     else {
       // TODO: arbitrary constant - consider removing
       char stopInfo[55];
-      Stop* s = &s_nearby_stops.data[cell_index->row];
+      Stop* s = MemListGet(s_nearby_stops.memlist, cell_index->row);
       if(strlen(s->direction) > 0) {
         snprintf(stopInfo, 
                  sizeof(stopInfo),
@@ -76,7 +76,8 @@ static void SelectCallback(struct MenuLayer *menu_layer,
                            void *context) {
   if(cell_index->row <= s_nearby_stops.count) {
     if(s_nearby_stops.count != 0) {
-      SettingsRoutesStart(s_nearby_stops.data[cell_index->row],
+      Stop stop = *(Stop*)MemListGet(s_nearby_stops.memlist, cell_index->row);
+      SettingsRoutesStart(stop,
                           s_nearby_routes, 
                           (Buses*)context);
     }
