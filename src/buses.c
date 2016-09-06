@@ -321,6 +321,7 @@ void StopsDestructor(Stops *stops) {
   }
   stops->count = 0;
   MemListClear(stops->memlist);
+  FreeAndClearPointer((void**)&stops->memlist);
 }
 
 Route RouteConstructor(const char* route_id,

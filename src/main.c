@@ -48,6 +48,7 @@ static void HandleDeinit(AppData* appdata) {
   SettingsStopsDeinit();
   BusesDestructor(&appdata->buses);
   ArrivalsDestructor(appdata->arrivals);
+  FreeAndClearPointer((void**)&appdata->arrivals);
   CommunicationDeinit();
   MainWindowDeinit();
 }

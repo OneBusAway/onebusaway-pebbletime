@@ -656,5 +656,6 @@ void CommunicationDeinit() {
   StopsDestructor(&s_nearby_stops);
   RoutesDestructor(&s_nearby_routes);
   ArrivalsDestructor(s_temp_arrivals);
+  FreeAndClearPointer((void**)&s_temp_arrivals);
   app_message_deregister_callbacks();
 }
