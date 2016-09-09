@@ -1,5 +1,7 @@
 #include "settings_stops.h"
 #include "utility.h"
+#include "progress_window.h"
+#include "communication.h"
 
 static Window *s_window;
 static MenuLayer *s_menu_layer;
@@ -77,9 +79,7 @@ static void SelectCallback(struct MenuLayer *menu_layer,
   if(cell_index->row <= s_nearby_stops.count) {
     if(s_nearby_stops.count != 0) {
       Stop stop = *(Stop*)MemListGet(s_nearby_stops.memlist, cell_index->row);
-      SettingsRoutesStart(stop,
-                          s_nearby_routes, 
-                          (Buses*)context);
+      SettingsRoutesInit(stop, (Buses*)context);
     }
     // no selection action when there are no stops found
   }
@@ -88,7 +88,7 @@ static void SelectCallback(struct MenuLayer *menu_layer,
   }
 }
 
-static void window_load(Window *window) {
+static void WindowLoad(Window* window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
@@ -122,29 +122,45 @@ static void window_load(Window *window) {
   vibes_short_pulse();
 }
 
-static void window_unload(Window *window) {
+static void WindowUnload(Window *window) {
+  SettingsRoutesDeinit();
   menu_layer_destroy(s_menu_layer);
 }
 
-void SettingsStopsStart(Stops stops, Routes routes, Buses* buses) {
+void SettingsStopsUpdate(Stops stops, Buses* buses) {
   s_nearby_stops = stops;
-  s_nearby_routes = routes;
-  window_set_user_data(s_window, buses);
-  window_stack_push(s_window, true);
+
+  if(s_window) {
+    window_set_user_data(s_window, buses);
+    window_stack_push(s_window, true);
+    
+    // refresh the menu
+    // layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+    // menu_layer_reload_data(s_menu_layer);        
+  }
+  ProgressWindowRemove();
 }
 
 void SettingsStopsInit() {
+  s_menu_layer = NULL;
   s_window = window_create();
   if(s_window == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
+    return;
   }
 
   window_set_window_handlers(s_window, (WindowHandlers) {
-    .load = window_load,
-    .unload = window_unload,
+    .load = WindowLoad,
+    .unload = WindowUnload,
   });
+
+  ProgressWindowPush();
+
+  // Start process of getting the stops
+  SendAppMessageGetNearbyStops();
 }
 
 void SettingsStopsDeinit() {
   window_destroy(s_window);
+  s_window = NULL;
 }

@@ -60,8 +60,8 @@ void AddArrival(const char* stop_id,
   }
 
   APP_LOG(APP_LOG_LEVEL_INFO, 
-          "AddArrival: @%u index:%u delta:%s",
-          (uint)pos, 
+          "AddArrival: @%i index:%u delta:%s",
+          (int)pos, 
           (uint)index, 
           arrival_string);
 }
@@ -113,7 +113,12 @@ void ArrivalDestructor(Arrival* arrival) {
 }
 
 Arrivals* ArrivalsCopy(const Arrivals* arrivals) {
-  return MemListCopy(arrivals);
+  Arrivals* arrivals_copy = MemListCopy(arrivals);
+  for(uint16_t i = 0; i < MemListCount(arrivals); i++) {
+    Arrival* dest = MemListGet(arrivals_copy, i);
+    *dest = ArrivalCopy((Arrival*)MemListGet(arrivals, i));
+  }
+  return arrivals_copy;
 }
 
 void ArrivalsConstructor(Arrivals** arrivals) {
@@ -121,12 +126,10 @@ void ArrivalsConstructor(Arrivals** arrivals) {
 }
 
 void ArrivalsDestructor(Arrivals* arrivals) {
+  for(uint16_t i = 0; i < MemListCount(arrivals); i++) {
+    ArrivalDestructor((Arrival*)MemListGet(arrivals, i));
+  }
   MemListClear(arrivals);
-  // for(uint32_t i = 0; i < arrival->count; i++) {
-  //   ArrivalDestructor(&arrival->data[i]);
-  // }
-  // FreeAndClearPointer((void**)&arrival->data);
-  // arrival->count = 0;
 }
 
 GColor ArrivalColor(const Arrival arrival) {

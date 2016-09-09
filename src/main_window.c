@@ -1,9 +1,9 @@
 #include <pebble.h>
 #include "main_window.h"
 #include "bus_details.h"
-#include "progress_window.h"
 #include "communication.h"
 #include "utility.h"
+#include "settings_stops.h"
 
 static Window *s_main_window;
 static MenuLayer *s_menu_layer;
@@ -76,6 +76,7 @@ void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata) {
 
   // move the temp arrivals to the display arrivals
   ArrivalsDestructor(appdata->arrivals);
+  FreeAndClearPointer((void**)&appdata->arrivals);
   appdata->arrivals = ArrivalsCopy(new_arrivals);
 
   // update the the bus detals window, if it's being shown
@@ -392,11 +393,8 @@ static void SelectCallback(
           // special case: no nearby buses to show,
           // show Add Route shortcut instead.
           if(appdata->arrivals->count == 0) {
-            // Start progress window
             appdata->show_settings = true;
-            ProgressWindowPush(appdata);
-            // Start process of getting the stops
-            SendAppMessageGetNearbyStops();
+            SettingsStopsInit();
           }
           else {
             // record the trip_id of the bus selected, to put the menu
@@ -424,11 +422,9 @@ static void SelectCallback(
       // settings menu
       switch (cell_index->row) {
         case 0:
-          // Start progress window
           appdata->show_settings = true;
-          ProgressWindowPush(appdata);
-          // Start process of getting the stops
-          SendAppMessageGetNearbyStops();
+          SettingsStopsInit();
+
           break;
         default :
           APP_LOG(APP_LOG_LEVEL_ERROR, 
@@ -487,6 +483,8 @@ static void WindowUnload(Window *window) {
 
 static void WindowAppear(Window *window) {
   AppData* appdata = window_get_user_data(window);
+
+  SettingsStopsDeinit();
 
   if(appdata->show_settings) {
     // returning from settings where settings have changed, update

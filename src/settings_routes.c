@@ -1,6 +1,8 @@
 #include "settings_routes.h"
 #include "utility.h"
 #include "error_window.h"
+#include "progress_window.h"
+#include "communication.h"
 
 static Window *s_window;
 static MenuLayer *s_menu_layer;
@@ -211,27 +213,44 @@ static void WindowUnload(Window *window) {
   menu_layer_destroy(s_menu_layer);
 }
 
-void SettingsRoutesStart(Stop stop, Routes routes, Buses* buses) {
-  s_stop = stop;
+void SettingsRoutesUpdate(Routes routes, Buses* buses) {
   s_nearby_routes = routes;
   BuildRouteIndex(buses);
-  window_set_user_data(s_window, buses);  
-  window_stack_push(s_window, true);
+
+  if(!s_window) {
+    s_window = window_create();
+  
+    if(s_window == NULL) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
+      return;
+    }
+    
+    window_set_window_handlers(s_window, (WindowHandlers) {
+      .load = WindowLoad,
+      .unload = WindowUnload,
+    });
+    window_set_user_data(s_window, buses);  
+    window_stack_push(s_window, true);  
+  }
+  else if(s_menu_layer) {
+    window_set_user_data(s_window, buses);
+    
+    // refresh the menu
+    layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+    menu_layer_reload_data(s_menu_layer);    
+  }
+  ProgressWindowRemove();
 }
 
-void SettingsRoutesInit() {
+void SettingsRoutesInit(Stop stop, Buses* buses) {
+  s_stop = stop;
   s_route_index.data = NULL;
   s_route_index.count = 0;
-
-  s_window = window_create();
+  s_window = NULL;
+  s_menu_layer = NULL;
   
-  if(s_window == NULL) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
-  }
-  window_set_window_handlers(s_window, (WindowHandlers) {
-    .load = WindowLoad,
-    .unload = WindowUnload,
-  });
+  ProgressWindowPush();
+  SendAppMessageGetRoutesForStop(&s_stop);
 }
 
 void SettingsRoutesDeinit() {

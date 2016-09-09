@@ -61,9 +61,11 @@ static void WindowDisappear(Window *window) {
 }
 
 static void BackSingleClickHandler(ClickRecognizerRef recognizer, void *context) {
-  AppData* appdata = context;
-  MainWindowCancelSettingsLoad(appdata);
-  ProgressWindowRemove();
+  // TODO: removing the ability for the progress window to be canceled.
+  // In order for this to work correctly, the initiate should provide a 
+  // callback to be invoked here to do the process cancelation for whatever
+  // was being waited on.
+  // ProgressWindowRemove();
 }
 
 static void ClickConfigHandler(Window *window) {
@@ -71,10 +73,9 @@ static void ClickConfigHandler(Window *window) {
   window_single_click_subscribe(BUTTON_ID_BACK, BackSingleClickHandler);
 }
 
-void ProgressWindowPush(AppData* appdata) {
+void ProgressWindowPush() {
   if(!s_window) {
     s_window = window_create();
-    window_set_user_data(s_window, appdata);
     window_set_background_color(s_window, PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite));
     window_set_window_handlers(s_window, (WindowHandlers) {
       .load = WindowLoad,
@@ -88,5 +89,7 @@ void ProgressWindowPush(AppData* appdata) {
 }
 
 void ProgressWindowRemove() {
-  window_stack_remove(s_window, true);
-}
+  if(s_window) {
+    window_stack_remove(s_window, true);
+  }
+} 

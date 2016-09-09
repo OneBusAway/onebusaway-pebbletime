@@ -494,8 +494,8 @@ function sendStopsToPebble(stops,
 
   if((stops.length === 0) || (transactionId != currentTransaction)) {
     // completed sending stops to the pebble; now send corresponding routes.
-    console.log("sendStopsToPebble: done. Starting sending routes.");
-    sendRoutesToPebble(routes, stopStrings, transactionId, 2 /*nearbyRoutes*/);
+    console.log("sendStopsToPebble: done.");
+    //sendRoutesToPebble(routes, stopStrings, transactionId, 2 /*nearbyRoutes*/);
     return;
   }
 
@@ -513,7 +513,7 @@ function sendStopsToPebble(stops,
       'AppMessage_stopName': stop.name,
       'AppMessage_lat': DecimalToDoubleByteArray(stop.lat),
       'AppMessage_lon': DecimalToDoubleByteArray(stop.lon),
-      'AppMessage_itemsRemaining': 1, // positive int == not done
+      'AppMessage_itemsRemaining': stops.length, // positive int == not done
       'AppMessage_routeListString': routeList,
       'AppMessage_direction': direction,
       'AppMessage_transactionId': transactionId,

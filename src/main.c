@@ -1,8 +1,6 @@
 #include <pebble.h>
 #include "main.h"
 #include "appdata.h"
-#include "settings_stops.h"
-#include "settings_routes.h"
 #include "persistence.h"
 #include "communication.h"
 #include "main_window.h"
@@ -38,14 +36,10 @@ static void HandleInit(AppData* appdata) {
   BluetoothCallback(connection_service_peek_pebble_app_connection());
 
   // Initialize windows
-  SettingsStopsInit();
-  SettingsRoutesInit();
   MainWindowInit(appdata);
 }
 
 static void HandleDeinit(AppData* appdata) {
-  SettingsRoutesDeinit();
-  SettingsStopsDeinit();
   BusesDestructor(&appdata->buses);
   ArrivalsDestructor(appdata->arrivals);
   FreeAndClearPointer((void**)&appdata->arrivals);

@@ -2,7 +2,7 @@
 #include <pebble-math-sll/math-sll.h>
 #include "arrivals.h"
 #include "bus_details.h"
-#include "communication.h"
+#include "settings_routes.h"
 #include "main_window.h"
 #include "error_window.h"
 #include "progress_window.h"
@@ -73,7 +73,7 @@ static void ActionMenuCallback(ActionMenu* action_menu,
   else if(item == 2) {
     // Start progress window
     MainWindowRefreshData(appdata);
-    ProgressWindowPush(appdata);
+    // ProgressWindowPush(appdata);
     
     // kick off request for routes for the stops
     
@@ -86,7 +86,9 @@ static void ActionMenuCallback(ActionMenu* action_menu,
                                 s_content.bus.lat,
                                 s_content.bus.lon,
                                 s_content.bus.direction);
-    SendAppMessageGetRoutesForStop(&stop);
+    // SendAppMessageGetRoutesForStop(&stop);
+    SettingsRoutesInit(stop, &appdata->buses);
+    // TODO: where does Deinit get called?
     BusDetailsWindowRemove();
   }
   else {

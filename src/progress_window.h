@@ -9,7 +9,7 @@
 #define PROGRESS_LAYER_WINDOW_DELTA 33
 #define PROGRESS_LAYER_WINDOW_WIDTH 80
 
-void ProgressWindowPush(AppData* appdata);
+void ProgressWindowPush();
 void ProgressWindowRemove();
 
 #endif /* end of include guard: PROGRESS_WINDOW_H */

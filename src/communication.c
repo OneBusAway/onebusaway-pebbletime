@@ -2,7 +2,6 @@
 #include "arrivals.h"
 #include "settings_stops.h"
 #include "main_window.h"
-#include "progress_window.h"
 #include "utility.h"
 #include "error_window.h"
 
@@ -127,16 +126,16 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
   
   APP_LOG(APP_LOG_LEVEL_ERROR, "SendAppMessageGetRoutesForStop: Sending...!");
 
-  // clear out existing nearby stops and add the single stop
-  StopsDestructor(&s_nearby_stops);
-  AddStop(0 /*index*/,
-          stop->stop_id, 
-          stop->stop_name, 
-          stop->detail_string,
-          stop->lat, 
-          stop->lon, 
-          stop->direction, 
-          &s_nearby_stops);
+  // // clear out existing nearby stops and add the single stop
+  // StopsDestructor(&s_nearby_stops);
+  // AddStop(0 /*index*/,
+  //         stop->stop_id, 
+  //         stop->stop_name, 
+  //         stop->detail_string,
+  //         stop->lat, 
+  //         stop->lon, 
+  //         stop->direction, 
+  //         &s_nearby_stops);
 
   // clear the nearby routes
   RoutesDestructor(&s_nearby_routes);
@@ -420,8 +419,6 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
       sll sll_lat = dbl2sll(lat);
       sll sll_lon = dbl2sll(lon);
       
-      // TODO: check for cohearancy - don't just create a stop
-      // every time, but check that it's happening in order.
       AddStop(index_tuple->value->uint16,
               stop_id_tuple->value->cstring,
               stop_name_tuple->value->cstring, 
@@ -431,11 +428,9 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
               direction_tuple->value->cstring, 
               &s_nearby_stops);
 
-      // TODO: COULD start showing settings at this point,
-      // if we weren't passing in the nearby routes by copy to the
-      // settigns menu (they're not loaded yet) -
-      // need a different way to pass s_nearby_routes if we're
-      // gonna go to settings before they're ready. V2
+      if(items_remaining_tuple->value->uint16 == 0) {
+        SettingsStopsUpdate(s_nearby_stops, &appdata->buses);
+      }
     }
     else {
       // another transaction has been initiated or the user has canceled
@@ -466,7 +461,7 @@ static void HandleAppMessageNearbyRoutes(
   if(items_remaining_tuple && route_id_tuple && route_name_tuple
      && stop_id_list_tuple && description_tuple && transaction_id_tuple) {
 
-    AppData* appdata = context;
+    // AppData* appdata = context;
     // active transaction? user canceled settings menu?
     if(transaction_id_tuple->value->uint32 == s_transaction_id) {
        
@@ -490,23 +485,26 @@ static void HandleAppMessageNearbyRoutes(
         s_outstanding_requests = 0;
 
         // get rid of the progress window and show the settings window
-        if(appdata->show_settings) {
+        // if(appdata->show_settings) {
           AppData* appdata = context;
-          if(message_type == kAppMessageNearbyRoutes) {
-            SettingsStopsStart(s_nearby_stops, 
-                              s_nearby_routes, 
-                              &appdata->buses);
-          }
-          else {
+          // if(message_type == kAppMessageNearbyRoutes) {
+          //   SettingsStopsStart(s_nearby_stops, 
+          //                      s_nearby_routes, 
+          //                      &appdata->buses);
+          // }
+          // else {
             // kAppMessageRoutesForStop
-            Stop stop = *(Stop*)MemListGet(s_nearby_stops.memlist, 0);
-            SettingsRoutesStart(stop, 
-                                s_nearby_routes, 
-                                &appdata->buses);
-          }
+            // Stop stop = *(Stop*)MemListGet(s_nearby_stops.memlist, 0);
+            // SettingsRoutesStart(stop, 
+            //                     s_nearby_routes, 
+            //                     &appdata->buses);
+          // }
           
-          ProgressWindowRemove();
-        }
+        //   ProgressWindowRemove();
+        // }
+        // if(appdata->show_settings) {
+          SettingsRoutesUpdate(s_nearby_routes, &appdata->buses);
+        // }
       }
       else {
         AddRoute(route_id_tuple->value->cstring, 

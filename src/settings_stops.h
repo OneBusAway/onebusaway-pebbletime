@@ -6,7 +6,7 @@
 #include "buses.h"
 #include "settings_routes.h"
 
-void SettingsStopsStart(Stops, Routes, Buses*);
+void SettingsStopsUpdate(Stops stops, Buses* buses);
 void SettingsStopsInit();
 void SettingsStopsDeinit();
 
