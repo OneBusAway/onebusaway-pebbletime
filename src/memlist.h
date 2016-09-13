@@ -16,5 +16,6 @@ void* MemListGet(const MemList* list, uint16_t pos);
 bool MemListAppend(MemList* list, void* object);
 bool MemListInsertAfter(MemList* list, void* object, uint16_t pos);
 MemList* MemListCopy(const MemList* list);
+bool MemListRemove(MemList* list, uint16_t pos);
 
 #endif

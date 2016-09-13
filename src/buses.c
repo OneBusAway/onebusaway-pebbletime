@@ -19,9 +19,14 @@ void ListBuses(const Buses* buses) {
 }
 
 void ListStops(const Stops* stops) {
-#ifndef RELEASE  
-  APP_LOG(APP_LOG_LEVEL_INFO, "Number of stops:%u", (uint)stops->count);
-  for(uint32_t i = 0; i < stops->count; i++)  {
+#ifndef RELEASE
+  APP_LOG(APP_LOG_LEVEL_INFO, "Number of stops:%u", (uint)stops->total_size);
+  APP_LOG(APP_LOG_LEVEL_INFO, 
+          "Number of memlist entries:%u @ offset: %u", 
+          (uint)MemListCount(stops->memlist),
+          (uint)stops->index_offset);
+          
+  for(uint32_t i = 0; i < MemListCount(stops->memlist); i++)  {
     Stop* s = MemListGet(stops->memlist, i);
     APP_LOG(APP_LOG_LEVEL_INFO,
             "%u - index:%u\tstop_id:%s\tname:%s\tdetails:%s\tdir:%s",
@@ -227,13 +232,7 @@ void AddStop(const uint16_t index,
           stop_name,
           detail_string);
 
-  Stop temp = StopConstructor(index,
-                              stop_id,
-                              stop_name,
-                              detail_string,
-                              lat,
-                              lon,
-                              direction);
+
   int16_t pos = -1;
   for(int16_t i = 0; i < MemListCount(stops->memlist); i++) {
     Stop* stop = (Stop*)MemListGet(stops->memlist, i);
@@ -241,7 +240,18 @@ void AddStop(const uint16_t index,
       pos = i;
       break;
     }
+    else if (stop->index == index) {
+      return;
+    }
   }
+
+  Stop temp = StopConstructor(index,
+                              stop_id,
+                              stop_name,
+                              detail_string,
+                              lat,
+                              lon,
+                              direction);
   
   if(pos == -1) {
     MemListAppend(stops->memlist, &temp);
@@ -250,7 +260,28 @@ void AddStop(const uint16_t index,
     MemListInsertAfter(stops->memlist, &temp, pos);
   }
   
-  stops->count+=1;
+  uint16_t count = MemListCount(stops->memlist);
+  if(count > 15) {
+    if(pos == -1 || pos > 5) {
+      // trim the start of the list
+      Stop* stop = (Stop*)MemListGet(stops->memlist, 0);
+      StopDestructor(stop);
+      MemListRemove(stops->memlist, 0);
+    }
+    else {
+      // trim the end of the list
+      Stop* stop = (Stop*)MemListGet(stops->memlist, count-1);
+      StopDestructor(stop);
+      MemListRemove(stops->memlist, count-1); 
+    }
+  } 
+  Stop* stop = (Stop*)MemListGet(stops->memlist, 0);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG,
+          " - stop 0: %s, new_index_offset:%u",
+          stop->stop_name,
+          (uint)stop->index);
+  stops->index_offset = stop->index; 
   
   ListStops(stops);
 }
@@ -311,7 +342,8 @@ void StopDestructor(Stop* stop) {
 }
 
 void StopsConstructor(Stops *stops) {
-  stops->count = 0;
+  stops->index_offset = 0;
+  stops->total_size = 0;
   stops->memlist = MemListCreate(sizeof(Stop));
 }
 
@@ -319,7 +351,8 @@ void StopsDestructor(Stops *stops) {
   for(uint32_t i = 0; i < MemListCount(stops->memlist); i++) {
     StopDestructor((Stop*)MemListGet(stops->memlist, i));
   }
-  stops->count = 0;
+  stops->index_offset = 0;
+  stops->total_size = 0;
   MemListClear(stops->memlist);
   FreeAndClearPointer((void**)&stops->memlist);
 }

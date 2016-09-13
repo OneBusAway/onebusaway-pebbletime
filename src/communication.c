@@ -6,7 +6,7 @@
 #include "error_window.h"
 
 static AppTimer *s_timer;
-static Stops s_nearby_stops;
+static Stops *s_nearby_stops;
 static Routes s_nearby_routes;
 static Arrivals *s_temp_arrivals;
 static sll s_cached_lat;
@@ -160,7 +160,7 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
   app_message_outbox_send();  
 }
 
-void SendAppMessageGetNearbyStops(uint32_t index) {
+void SendAppMessageGetNearbyStops(uint16_t index, uint16_t count) {
   // if(s_outstanding_requests > 0) {
   //   // wait until the app message queue is clear
   //   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageGetNearbyStops: ...waiting...");
@@ -181,13 +181,14 @@ void SendAppMessageGetNearbyStops(uint32_t index) {
   // Write data
   dict_write_uint32(iterator, kAppMessageMessageType, kAppMessageNearbyStops);
   dict_write_uint32(iterator, kAppMessageTransactionId, s_transaction_id);
-  dict_write_uint32(iterator, kAppMessageIndex, index);
-
+  dict_write_uint16(iterator, kAppMessageIndex, index);
+  dict_write_uint16(iterator, kAppMessageCount, count);
+  
   // Send data
   app_message_outbox_send();
 }
 
-void SendAppMessageInitiateGetNearbyStops() {
+void SendAppMessageInitiateGetNearbyStops(Stops* stops) {
   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageInitiateGetNearbyStops - start");
   
   CancelOutstandingRequests();
@@ -198,10 +199,10 @@ void SendAppMessageInitiateGetNearbyStops() {
           (uint)s_transaction_id);
 
   // clear out existing nearby stops, routes
-  StopsDestructor(&s_nearby_stops);
+  s_nearby_stops = stops;
   RoutesDestructor(&s_nearby_routes);
 
-  SendAppMessageGetNearbyStops(0);
+  SendAppMessageGetNearbyStops(0,10);
 }
 
 // TODO: ADD WAIT/RETRY LOGIC + OUTSTANDING REQUESTS BLOCK/LOCK
@@ -397,10 +398,11 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
   Tuple *direction_tuple = dict_find(iterator, kAppMessageDirection);
   Tuple *transaction_id_tuple = dict_find(iterator, kAppMessageTransactionId);
   Tuple *index_tuple = dict_find(iterator, kAppMessageIndex);
+  Tuple *count_tuple = dict_find(iterator, kAppMessageCount);
       
   if(stop_id_tuple && items_remaining_tuple && stop_name_tuple &&
-     route_list_string_tuple && lat_tuple && lon_tuple
-     && direction_tuple && transaction_id_tuple && index_tuple) {
+     route_list_string_tuple && lat_tuple && lon_tuple && count_tuple &&
+     direction_tuple && transaction_id_tuple && index_tuple) {
 
     AppData* appdata = context;
     // active transaction? user canceled settings menu?
@@ -419,6 +421,8 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
       sll sll_lat = dbl2sll(lat);
       sll sll_lon = dbl2sll(lon);
       
+      s_nearby_stops->total_size = count_tuple->value->uint16;
+      
       AddStop(index_tuple->value->uint16,
               stop_id_tuple->value->cstring,
               stop_name_tuple->value->cstring, 
@@ -426,7 +430,7 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
               sll_lat, 
               sll_lon, 
               direction_tuple->value->cstring, 
-              &s_nearby_stops);
+              s_nearby_stops);
 
       if(items_remaining_tuple->value->uint16 == 0) {
         SettingsStopsUpdate(s_nearby_stops, &appdata->buses);
@@ -627,7 +631,6 @@ static void OutboxSentCallback(DictionaryIterator *iterator, void *context) {
 
 void CommunicationInit(AppData* appdata) {
   s_timer = NULL;
-  StopsConstructor(&s_nearby_stops);
   RoutesConstructor(&s_nearby_routes);
   ArrivalsConstructor(&s_temp_arrivals);
   s_cached_lat = CONST_0;
@@ -651,7 +654,6 @@ void CommunicationInit(AppData* appdata) {
 
 void CommunicationDeinit() {
   StopArrivalsUpdateTimer();
-  StopsDestructor(&s_nearby_stops);
   RoutesDestructor(&s_nearby_routes);
   ArrivalsDestructor(s_temp_arrivals);
   FreeAndClearPointer((void**)&s_temp_arrivals);

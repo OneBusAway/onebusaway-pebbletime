@@ -51,7 +51,8 @@ typedef struct {
 
 typedef struct {
   MemList* memlist;
-  uint32_t count;
+  uint16_t total_size; // total number of stops
+  uint16_t index_offset; // what index does the memlist start at
 } __attribute__((__packed__)) Stops;
 
 typedef struct {
@@ -67,6 +68,7 @@ typedef struct {
 } __attribute__((__packed__)) Routes;
 
 void ListBuses(const Buses* buses);
+void ListStops(const Stops* stops);
 void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses);
 void BusesDestructor(Buses* buses);
 bool AddBus(const Bus* bus, Buses* buses);
@@ -95,6 +97,7 @@ Stop StopConstructor(const uint16_t index,
                      const sll lat,
                      const sll lon,
                      const char* direction);
+void StopDestructor(Stop* stop);
 void StopsConstructor(Stops* stops);
 void StopsDestructor(Stops* stops);
 Route RouteConstructor(const char* route_id,

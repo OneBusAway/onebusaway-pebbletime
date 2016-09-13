@@ -31,7 +31,8 @@ enum AppMessageKeys {
   kAppMessageTripId,
   kAppMessagebusList,
   kAppMessageArrivalDeltaString,
-  kAppMessageIndex
+  kAppMessageIndex,
+  kAppMessageCount
 };
 
 // Enumerations for kAppMessageMessageType
@@ -51,7 +52,8 @@ void CommunicationDeinit();
 void StartArrivalsUpdateTimer(AppData* appdata);
 void StopArrivalsUpdateTimer();
 void UpdateArrivals(AppData* appdata);
-void SendAppMessageGetNearbyStops();
+void SendAppMessageGetNearbyStops(uint16_t index, uint16_t count);
+void SendAppMessageInitiateGetNearbyStops(Stops* stops);
 void SendAppMessageGetRoutesForStop(Stop* stop);
 
 #endif // COMMUNICATION_H

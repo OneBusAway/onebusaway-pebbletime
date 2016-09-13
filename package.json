@@ -40,7 +40,8 @@
       "AppMessage_tripId": 18,
       "AppMessage_busList": 19,
       "AppMessage_arrivalDeltaString": 20,
-      "AppMessage_index": 21
+      "AppMessage_index": 21,
+      "AppMessage_count": 22
     },
     "enableMultiJS": true,
     "displayName": "OneBusAway for Pebble Time",
