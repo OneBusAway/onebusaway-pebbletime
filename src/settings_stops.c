@@ -6,7 +6,6 @@
 static Window *s_window;
 static MenuLayer *s_menu_layer;
 static Stops s_nearby_stops;
-static Routes s_nearby_routes;
 
 static void SelectionChanged(struct MenuLayer *menu_layer, 
                              MenuIndex new_index, 

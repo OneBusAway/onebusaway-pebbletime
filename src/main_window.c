@@ -534,9 +534,9 @@ static void WindowDisappear(Window *window) {
   AppData* appdata = window_get_user_data(window);  
     
   // stop the timer if we're going to go change the routes
-  if(appdata->show_settings) {
+  // if(appdata->show_settings) {
     StopArrivalsUpdateTimer();
-  }
+  // }
 }
 
 void MainWindowInit(AppData* appdata) {

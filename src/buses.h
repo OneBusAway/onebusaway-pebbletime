@@ -60,6 +60,7 @@ typedef struct {
   char* route_name;
   char* description;
   char* stop_id_list;
+  bool favorite;
 } __attribute__((__packed__)) Route;
 
 typedef struct {
@@ -103,7 +104,8 @@ void StopsDestructor(Stops* stops);
 Route RouteConstructor(const char* route_id,
                        const char* route_name,
                        const char* stop_id_list,
-                       const char* description);
+                       const char* description,
+                       const bool favorite);
 void RouteDestructor(Route *t);
 void RoutesConstructor(Routes *r);
 void RoutesDestructor(Routes *r);

@@ -309,7 +309,8 @@ void AddRoute(const char *route_id,
   Route temp_route = RouteConstructor(route_id,
                                       routeName,
                                       stop_id_list,
-                                      description);
+                                      description,
+                                      false);
   routes->data[routes->count] = temp_route;
   routes->count+=1;
 }
@@ -360,14 +361,15 @@ void StopsDestructor(Stops *stops) {
 Route RouteConstructor(const char* route_id,
                        const char* route_name,
                        const char* stop_id_list,
-                       const char* direction) {
+                       const char* direction,
+                       const bool favorite) {
 
   Route t;
   StringAllocateAndCopy(&t.route_id, route_id);
   StringAllocateAndCopy(&t.route_name, route_name);
   StringAllocateAndCopy(&t.stop_id_list, stop_id_list);
   StringAllocateAndCopy(&t.description, direction);
-
+  t.favorite = favorite;
   return t;
 }
 

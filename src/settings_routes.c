@@ -9,69 +9,14 @@ static MenuLayer *s_menu_layer;
 static Stop s_stop;
 static Routes s_nearby_routes;
 
-typedef struct {
-  uint32_t index;
-  bool favorite;
-} RouteInfo;
-
-typedef struct {
-  RouteInfo* data;
-  uint32_t count;
-} RouteIndex;
-
-static RouteIndex s_route_index;
-
-static void BuildRouteIndex(const Buses* buses) {
-  s_route_index.count = 0;
-  FreeAndClearPointer((void**)&s_route_index.data);
-
-  // APP_LOG(APP_LOG_LEVEL_INFO, 
-  //         "route index: %u routes",
-  //         (uint)s_nearby_routes.count);
-  for(uint32_t i = 0; i < s_nearby_routes.count; i++) {
-    // APP_LOG(APP_LOG_LEVEL_INFO, 
-    //         "  route: %s - %s", 
-    //         s_nearby_routes.data[i].route_id,  
-    //         s_nearby_routes.data[i].route_name);
-
-    // all stops in the stop_id_list are ',' terminated
-    int stop_size = strlen(s_stop.stop_id);  
-    char* stop_id = (char*)malloc(stop_size+1);
-    snprintf(stop_id, stop_size+1, "%s,", s_stop.stop_id);
-
-    if(strstr(s_nearby_routes.data[i].stop_id_list, stop_id) != NULL) {
-      RouteInfo* temp = (RouteInfo*)malloc(sizeof(RouteInfo) * 
-                                           (s_route_index.count+1));
-      if(temp == NULL) {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "NULL ROUTE INDEX");
-      }
-      if(s_route_index.data != NULL) {
-        memcpy(temp, s_route_index.data, sizeof(RouteInfo)*s_route_index.count);
-        free(s_route_index.data);
-      }
-      s_route_index.data = temp;
-      s_route_index.data[s_route_index.count].index = i;
-      s_route_index.data[s_route_index.count].favorite = GetBusIndex(
-          s_stop.stop_id, 
-          s_nearby_routes.data[i].route_id, buses) < 0 ? false : true;
-      s_route_index.count+=1;
-    }
-    free(stop_id);
+void BuildFavorites(Buses* buses) {
+  for(uint i = 0; i < s_nearby_routes.count; i++) {
+    bool favorite = GetBusIndex(
+        s_stop.stop_id, 
+        s_nearby_routes.data[i].route_id, buses) < 0 ? false : true;
+    s_nearby_routes.data[i].favorite = favorite;
   }
-  // APP_LOG(APP_LOG_LEVEL_INFO, 
-  //         "route index: %u routes indexed", 
-  //         (uint)s_route_index.count);
-  // for(uint32_t i = 0; i < s_route_index.count; i++) {
-  //   APP_LOG(APP_LOG_LEVEL_INFO, 
-  //           "  index: %u %s", 
-  //           (uint)s_route_index.data[i].index, 
-  //           s_nearby_routes.data[s_route_index.data[i].index].route_name);
-  // }
 }
-
-//
-// MENUS
-//
 
 static uint16_t MenuGetNumSectionsCallback(MenuLayer *menu_layer, 
                                            void *data) {
@@ -81,7 +26,7 @@ static uint16_t MenuGetNumSectionsCallback(MenuLayer *menu_layer,
 static uint16_t GetNumRowsCallback(MenuLayer *menu_layer, 
                                    uint16_t section_index, 
                                    void *context) {
-  return s_route_index.count;
+  return s_nearby_routes.count;
 }
 
 static int16_t GetHeaderHeightCallback(MenuLayer *menu_layer, 
@@ -101,8 +46,8 @@ static void DrawRowCallback(GContext *ctx,
                             const Layer *cell_layer, 
                             MenuIndex *cell_index, 
                             void *context) {
-  if(cell_index->row <= s_route_index.count) {
-    if(s_route_index.count == 0) {
+  if(cell_index->row <= s_nearby_routes.count) {
+    if(s_nearby_routes.count == 0) {
       menu_cell_basic_draw(ctx, 
                            cell_layer, 
                            "Sorry!", 
@@ -110,13 +55,7 @@ static void DrawRowCallback(GContext *ctx,
                            NULL);
     }
     else {
-      uint32_t i = s_route_index.data[cell_index->row].index;
-      if(s_nearby_routes.data == NULL) {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "NULL NEARBY ROUTES!");
-      }
-      if(i >= s_nearby_routes.count) {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "INDEXING BEYOND END OF NEARBY ROUTES!");
-      }
+      uint32_t i = cell_index->row;
 
       // this used to be copy, but it crashed things no the watch hw
       // worked fine on the emulator - not sure why that didn't work?
@@ -125,7 +64,7 @@ static void DrawRowCallback(GContext *ctx,
       const char* heart = "❤";
       // TODO - fix the size of name to a better value
       char name[30];
-      if(s_route_index.data[cell_index->row].favorite) {
+      if(r->favorite) {
         snprintf(name, 30, "%s %s", heart, r->route_name);
       }
       else {
@@ -152,20 +91,19 @@ static int16_t GetCellHeightCallback(struct MenuLayer *menu_layer,
 static void SelectCallback(struct MenuLayer *menu_layer, 
                            MenuIndex *cell_index,
                            void *context) {
-  if(cell_index->row <= s_route_index.count) {
+  if(cell_index->row <= s_nearby_routes.count) {
     //TODO - is there a special case for 0 stops here? YES!
-    Route *route = 
-        &s_nearby_routes.data[s_route_index.data[cell_index->row].index];
+    Route *route = &s_nearby_routes.data[cell_index->row];
     int32_t bus_index = GetBusIndex(s_stop.stop_id, 
                                     route->route_id, 
                                     (Buses*)context);
     if(bus_index >= 0) {
       RemoveBus(bus_index, (Buses*)context);
-      s_route_index.data[cell_index->row].favorite = false;
+      s_nearby_routes.data[cell_index->row].favorite = false;
     }
     else {
       bool result = AddBusFromStopRoute(&s_stop, route, (Buses*)context);
-      s_route_index.data[cell_index->row].favorite = result;
+      s_nearby_routes.data[cell_index->row].favorite = result;
       if(!result) {
         ErrorWindowPush(
             "Can't save favorite.\n\nMaximum number of favorite buses reached.", 
@@ -215,7 +153,7 @@ static void WindowUnload(Window *window) {
 
 void SettingsRoutesUpdate(Routes routes, Buses* buses) {
   s_nearby_routes = routes;
-  BuildRouteIndex(buses);
+  BuildFavorites(buses);
 
   if(!s_window) {
     s_window = window_create();
@@ -244,8 +182,6 @@ void SettingsRoutesUpdate(Routes routes, Buses* buses) {
 
 void SettingsRoutesInit(Stop stop, Buses* buses) {
   s_stop = stop;
-  s_route_index.data = NULL;
-  s_route_index.count = 0;
   s_window = NULL;
   s_menu_layer = NULL;
   
@@ -254,6 +190,5 @@ void SettingsRoutesInit(Stop stop, Buses* buses) {
 }
 
 void SettingsRoutesDeinit() {
-  FreeAndClearPointer((void**)&s_route_index.data);
   window_destroy(s_window);
 }
