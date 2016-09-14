@@ -288,15 +288,13 @@ void AddStop(const uint16_t index,
 
 void AddRoute(const char *route_id,
               const char *routeName,
-              const char *stop_id_list,
               const char *description,
               Routes* routes) {
 
   APP_LOG(APP_LOG_LEVEL_INFO,
-          "Creating route - route:%s, name:%s, stops:%s",
+          "Creating route - route:%s, name:%s",
           route_id,
-          routeName,
-          stop_id_list);
+          routeName);
   Route* temp_routes = (Route*)malloc(sizeof(Route)*((routes->count)+1));
   if(temp_routes == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL ROUTES POINTER");
@@ -308,7 +306,6 @@ void AddRoute(const char *route_id,
   routes->data = temp_routes;
   Route temp_route = RouteConstructor(route_id,
                                       routeName,
-                                      stop_id_list,
                                       description,
                                       false);
   routes->data[routes->count] = temp_route;
@@ -360,14 +357,12 @@ void StopsDestructor(Stops *stops) {
 
 Route RouteConstructor(const char* route_id,
                        const char* route_name,
-                       const char* stop_id_list,
                        const char* direction,
                        const bool favorite) {
 
   Route t;
   StringAllocateAndCopy(&t.route_id, route_id);
   StringAllocateAndCopy(&t.route_name, route_name);
-  StringAllocateAndCopy(&t.stop_id_list, stop_id_list);
   StringAllocateAndCopy(&t.description, direction);
   t.favorite = favorite;
   return t;
@@ -376,7 +371,6 @@ Route RouteConstructor(const char* route_id,
 void RouteDestructor(Route *t) {
   FreeAndClearPointer((void**)&t->route_id);
   FreeAndClearPointer((void**)&t->route_name);
-  FreeAndClearPointer((void**)&t->stop_id_list);
   FreeAndClearPointer((void**)&t->description);
 }
 

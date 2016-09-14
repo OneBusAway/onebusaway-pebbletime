@@ -458,12 +458,11 @@ static void HandleAppMessageNearbyRoutes(
   Tuple *items_remaining_tuple = dict_find(iterator, kAppMessageItemsRemaining);
   Tuple *route_id_tuple = dict_find(iterator, kAppMessageRouteId);
   Tuple *route_name_tuple = dict_find(iterator, kAppMessageRouteName);
-  Tuple *stop_id_list_tuple = dict_find(iterator, kAppMessageStopIdList);
   Tuple *description_tuple = dict_find(iterator, kAppMessageDescription);
   Tuple *transaction_id_tuple = dict_find(iterator, kAppMessageTransactionId);
 
   if(items_remaining_tuple && route_id_tuple && route_name_tuple
-     && stop_id_list_tuple && description_tuple && transaction_id_tuple) {
+     && description_tuple && transaction_id_tuple) {
 
     // AppData* appdata = context;
     // active transaction? user canceled settings menu?
@@ -513,7 +512,6 @@ static void HandleAppMessageNearbyRoutes(
       else {
         AddRoute(route_id_tuple->value->cstring, 
                  route_name_tuple->value->cstring, 
-                 stop_id_list_tuple->value->cstring, 
                  description_tuple->value->cstring,
                  &s_nearby_routes);
       }

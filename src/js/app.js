@@ -25,7 +25,6 @@ var APP_MESSAGE_TIMEOUT = 2000;
 var HTTP_MAX_ATTEMPTS = 7;
 var HTTP_RETRY_TIMEOUT = 2000;
 var HTTP_REQUEST_TIMEOUT = 7500;
-var MAX_STOPS = 50;
 
 var arrivalsJsonCache = {};
 var currentTransaction = -1;
@@ -419,7 +418,6 @@ function sendEndOfStopsRoutes(transactionId, messageType) {
     'AppMessage_routeId': 0,
     'AppMessage_routeName': '',
     'AppMessage_itemsRemaining': 0,
-    'AppMessage_stopIdList': '',
     'AppMessage_description': '',
     'AppMessage_transactionId': transactionId,
     'AppMessage_messageType': messageType
@@ -435,7 +433,7 @@ function sendEndOfStopsRoutes(transactionId, messageType) {
 /**
  * Send the list of nearby routes as requested by the watch settings menu
  */
-function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
+function sendRoutesToPebble(routes, transactionId, messageType) {
   console.log("#routes: " + routes.length);
 
   if((routes.length === 0) || (transactionId != currentTransaction)) {
@@ -460,18 +458,17 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
       'AppMessage_routeId': route.id,
       'AppMessage_routeName': name,
       'AppMessage_itemsRemaining': 1, // positive int == not done
-      'AppMessage_stopIdList': stopStrings[route.id],
       'AppMessage_description': description,
       'AppMessage_transactionId': transactionId,
       'AppMessage_messageType': messageType // nearby routes or routes for stop
     };
 
     console.log('sendRoutesToPebble: sending - ' + route.id + ',' + name + ',' +
-                stopStrings[route.id] + ',' + description);
+                description);
 
     sendAppMessage(dictionary,
       function() {
-        sendRoutesToPebble(routes, stopStrings, transactionId, messageType);
+        sendRoutesToPebble(routes, transactionId, messageType);
       }
     );
   }
@@ -486,8 +483,6 @@ function sendRoutesToPebble(routes, stopStrings, transactionId, messageType) {
  * Send the list of nearby stops as requested by the watch settings menu
  */
 function sendStopsToPebble(stops,
-                           routes,
-                           stopStrings,
                            routeStrings,
                            transactionId,
                            index,
@@ -498,7 +493,6 @@ function sendStopsToPebble(stops,
      (transactionId != currentTransaction)) {
     // completed sending stops to the pebble; now send corresponding routes.
     console.log("sendStopsToPebble: done.");
-    //sendRoutesToPebble(routes, stopStrings, transactionId, 2 /*nearbyRoutes*/);
     return;
   }
 
@@ -531,14 +525,12 @@ function sendStopsToPebble(stops,
     // Send to Pebble
     sendAppMessage(dictionary,
       function() {
-        sendStopsToPebble(stops, routes, stopStrings, routeStrings,
-          transactionId, index+1, index_end);
+        sendStopsToPebble(stops, routeStrings, transactionId, index+1, index_end);
       }
     );
   }
   else {
     console.log("sendStopsToPebble: done (with error).");
-    //sendRoutesToPebble(routes, stopStrings, transactionId, 2 /*nearbyRoutes*/);
   }
 }
 
@@ -599,57 +591,6 @@ function buildStopRouteStrings(json) {
       }
       console.log("stop: " + stops[i].id + " routestring: " + routeString);
       stringTable[stops[i].id] = routeString;
-    }
-  }
-
-  return stringTable;
-}
-
-/**
- * return an index of stops per route from OBA nearby stops json
- */
-function buildRouteStopStrings(json) {
-  var stringTable = {};
-
-  if(json.data === null) {
-    return stringTable;
-  }
-
-  if(json.data.hasOwnProperty('references')) {
-    var stops = json.data.list;
-    for(var i = 0; i < stops.length; i++) {
-      for(var r = 0; r < stops[i].routeIds.length; r++) {
-        var routeId = stops[i].routeIds[r];
-
-        // console.log("RID: " + routeId);
-
-        // parsing code expects all stops to be comma terminated
-        if(stringTable[routeId]) {
-          stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
-        }
-        else {
-          stringTable[routeId] = stops[i].id + ",";
-        }
-
-        // console.log("ST:" + stringTable[routeId]);
-      }
-    }
-  }
-  else {
-    // special case for New York (MTA)
-    var stops = json.data.stops;
-    for(var i = 0; i < stops.length; i++) {
-      for(var r = 0; r < stops[i].routes.length; r++) {
-        var routeId = stops[i].routes[r].id;
-
-        // parsing code expects all stops to be comma terminated
-        if(stringTable[routeId]) {
-          stringTable[routeId] = stringTable[routeId] + stops[i].id + ",";
-        }
-        else {
-          stringTable[routeId] = stops[i].id + ",";
-        }
-      }
     }
   }
 
@@ -754,38 +695,23 @@ function getNearbyStopsLocationSuccess(pos, transactionId, index, index_end) {
       // responseText contains a JSON object
       var json = JSON.parse(responseText);
 
-      var routeStrings = buildStopRouteStrings(json);
-      var stopStrings = buildRouteStopStrings(json);
-
       if(json.data !== null) {
+        var routeStrings = buildStopRouteStrings(json);
+
         var stops;
-        var routes;
         if(json.data.hasOwnProperty('references')) {
           stops = json.data.list;
-          routes = json.data.references.routes;
         }
         else {
           // New York (MTA) special case
           stops = json.data.stops;
-          routes = buildRoutesList(json);
         }
-
-        // TODO: trim stops to max length to prevent out of memory errors on the
-        // watch; or, better solution, paginate the results
-        // if(stops.length > MAX_STOPS) {
-        //   var diff = stops.length - MAX_STOPS;
-        //   console.log("---WARNING--- cutting stop length from " + stops.length +
-        //     " to " + MAX_STOPS);
-        //   stops.splice((-1)*diff, diff);
-        // }
 
         if(stops.length < index_end) {
           index_end = stops.length - 1;
         }
 
-        // return the full list up to the max length requested by the watch
-        sendStopsToPebble(stops, routes, stopStrings, routeStrings,
-          transactionId, index, index_end);
+        sendStopsToPebble(stops, routeStrings, transactionId, index, index_end);
       }
     }
   );
@@ -813,14 +739,7 @@ function getRoutesForStop(stopId, transactionId) {
           routes = buildRoutesList(json);
         }
 
-        // buildRouteStopStrings faked
-        var stopStrings = {};
-        for(var r = 0; r < routes.length; r++) {
-          var routeId = routes[r].id;
-          stopStrings[routeId] = stopId + ",";
-        }
-
-        sendRoutesToPebble(routes, stopStrings, transactionId, 5 /*RoutesForStop*/);
+        sendRoutesToPebble(routes, transactionId, 5 /*RoutesForStop*/);
       }
     }
   );

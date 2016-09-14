@@ -18,7 +18,7 @@ enum AppMessageKeys {
   kAppMessageItemsRemaining,
   kAppMessageRouteListString,
   kAppMessageStopName,
-  kAppMessageStopIdList,
+  kAppMessagePLACEHOLDER, // unused
   kAppMessageRouteName,
   kAppMessageDescription,
   kAppMessageLat,
