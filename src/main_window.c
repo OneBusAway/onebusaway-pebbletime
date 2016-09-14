@@ -79,9 +79,11 @@ void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata) {
   FreeAndClearPointer((void**)&appdata->arrivals);
   appdata->arrivals = ArrivalsCopy(new_arrivals);
 
+#ifndef PBL_PLATFORM_APLITE
   // update the the bus detals window, if it's being shown
   BusDetailsWindowUpdate(appdata);
-    
+#endif
+
   // show the data, all arrivals are in
   DoneLoading();
     
@@ -397,18 +399,20 @@ static void SelectCallback(
             SettingsStopsInit();
           }
           else {
-            // record the trip_id of the bus selected, to put the menu
-            // cursor back in the right place when returning to this window
             Arrival* arrival = (Arrival*)MemListGet(appdata->arrivals, 
                 cell_index->row);
-            uint i = arrival->bus_index;
+#ifndef PBL_PLATFORM_APLITE
+            // record the trip_id of the bus selected, to put the menu
+            // cursor back in the right place when returning to this window
+            // uint i = arrival->bus_index;
             FreeAndClearPointer((void**)&s_last_selected_trip_id);
             char* trip_id = arrival->trip_id;
             s_last_selected_trip_id = (char*)malloc(strlen(trip_id)+1);
             StringCopy(s_last_selected_trip_id, trip_id, strlen(trip_id)+1);
+#endif
 
             // show the detail window for the bus selected
-            BusDetailsWindowPush(appdata->buses.data[i], 
+            BusDetailsWindowPush(appdata->buses.data[arrival->bus_index], 
                                  arrival, 
                                  appdata);
           }
@@ -531,7 +535,7 @@ static void WindowAppear(Window *window) {
 }
 
 static void WindowDisappear(Window *window) {
-  AppData* appdata = window_get_user_data(window);  
+  // AppData* appdata = window_get_user_data(window);  
     
   // stop the timer if we're going to go change the routes
   // if(appdata->show_settings) {

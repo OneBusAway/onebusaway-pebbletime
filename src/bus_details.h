@@ -5,6 +5,8 @@
 #include "arrivals.h"
 #include "appdata.h"
 
+#ifndef PBL_PLATFORM_APLITE
+
 #define NUM_LAYERS 2
 
 typedef enum {
@@ -12,8 +14,11 @@ typedef enum {
   ScrollDirectionUp,
 } ScrollDirection;
 
-void BusDetailsWindowPush(const Bus, const Arrival*, AppData* appdata);
 void BusDetailsWindowUpdate(AppData* appdata);
+#endif
+
+void BusDetailsWindowPush(const Bus, const Arrival*, AppData* appdata);
 void BusDetailsWindowRemove();
+
 
 #endif //BUS_DETAILS_H

@@ -11,6 +11,7 @@
 typedef struct {
   Bus bus;
   Arrival arrival;
+#ifndef PBL_PLATFORM_APLITE  
   struct {
     TextLayer *header;
     TextLayer *status;
@@ -28,20 +29,24 @@ typedef struct {
     TextLayer *bus_details_label;
     TextLayer *bus_details;
   } card_two;
+#endif
 } BusDetailsContent;
 
 BusDetailsContent s_content;
 
+#ifndef PBL_PLATFORM_APLITE
 static Window *s_window;
 static Layer* s_layers[NUM_LAYERS];
 static Layer *s_indicator_up_layer, *s_indicator_down_layer;
 static Layer* s_menu_circle_layer;
 static ContentIndicator *s_indicator;
 static int s_layer_index;
-static ActionMenuLevel *s_action_menu_root;
 static GFont s_res_header_font;
 static GFont s_res_gothic_18;
 static GFont s_res_gothic_18_bold;
+#endif
+
+static ActionMenuLevel *s_action_menu_root;
 
 static void ActionMenuCallback(ActionMenu* action_menu, 
                                const ActionMenuItem* action, 
@@ -127,6 +132,8 @@ static void ShowActionMenu(AppData* appdata) {
  
   action_menu_open(&action_config);
 }
+
+#ifndef PBL_PLATFORM_APLITE
 
 static void MenuCircleUpdateProc(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, GColorBlack);
@@ -524,14 +531,18 @@ static void WindowClickConfigProvider(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, SelectSingleClickHandler);
 }
 
+#endif //PBL_PLATFORM_APLITE
+
 void BusDetailsWindowPush(
     const Bus bus, 
     const Arrival* arrival,
     AppData* appdata) {
 
-  if(!s_window) {
     s_content.bus = bus;
     s_content.arrival = ArrivalCopy(arrival);
+
+#ifndef PBL_PLATFORM_APLITE
+  if(!s_window) {
     s_window = window_create();
     window_set_background_color(s_window, GColorWhite);
     window_set_click_config_provider_with_context(s_window, 
@@ -543,7 +554,17 @@ void BusDetailsWindowPush(
     });
   }
   window_stack_push(s_window, true);
+#endif //PBL_PLATFORM_APLITE
+
+#ifdef PBL_PLATFORM_APLITE
+
+  ShowActionMenu(appdata);
+
+#endif //PBL_PLATFORM_APLITE
+
 }
+
+#ifndef PBL_PLATFORM_APLITE
 
 static const char* BusDetailsWindowGetTripId() {
   if(s_window) {
@@ -586,9 +607,13 @@ void BusDetailsWindowUpdate(AppData* appdata) {
     }
   }
 }
+#endif
 
 void BusDetailsWindowRemove(void) {
+#ifndef PBL_PLATFORM_APLITE
   if(s_window) {
     window_stack_remove(s_window, true);
   }
+#endif
 }
+
