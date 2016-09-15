@@ -27,6 +27,7 @@ var HTTP_RETRY_TIMEOUT = 2000;
 var HTTP_REQUEST_TIMEOUT = 7500;
 
 var arrivalsJsonCache = {};
+var stopsJsonCache = {};
 var currentTransaction = -1;
 
 /** Extend Number object with method to convert numeric degrees to radians */
@@ -671,6 +672,25 @@ function getLocationSuccess(attempts, pos) {
   }
 }
 
+function sendStopsToPebbleJson(json, transactionId, index, index_end) {
+  var routeStrings = buildStopRouteStrings(json);
+
+  var stops;
+  if(json.data.hasOwnProperty('references')) {
+    stops = json.data.list;
+  }
+  else {
+    // New York (MTA) special case
+    stops = json.data.stops;
+  }
+
+  if(stops.length < index_end) {
+    index_end = stops.length - 1;
+  }
+
+  sendStopsToPebble(stops, routeStrings, transactionId, index, index_end);
+}
+
 /**
  * requests the bus stops near the current GPS coordinates and sends the
  * stops and routes to the watch
@@ -694,24 +714,9 @@ function getNearbyStopsLocationSuccess(pos, transactionId, index, index_end) {
     function(responseText) {
       // responseText contains a JSON object
       var json = JSON.parse(responseText);
-
       if(json.data !== null) {
-        var routeStrings = buildStopRouteStrings(json);
-
-        var stops;
-        if(json.data.hasOwnProperty('references')) {
-          stops = json.data.list;
-        }
-        else {
-          // New York (MTA) special case
-          stops = json.data.stops;
-        }
-
-        if(stops.length < index_end) {
-          index_end = stops.length - 1;
-        }
-
-        sendStopsToPebble(stops, routeStrings, transactionId, index, index_end);
+        stopsJsonCache = json;
+        sendStopsToPebbleJson(stopsJsonCache, transactionId, index, index_end);
       }
     }
   );
@@ -820,10 +825,17 @@ Pebble.addEventListener('appmessage',
         // getArrivals(leftSide, e.payload.AppMessage_transactionId);
         break;
       case 1: // get nearyby stops
-        currentTransaction = e.payload.AppMessage_transactionId;
+        var transactionId = e.payload.AppMessage_transactionId;
         var index = e.payload.AppMessage_index;
         var index_end = e.payload.AppMessage_count + index - 1;
-        getNearbyStops(e.payload.AppMessage_transactionId, index, index_end);
+        if(currentTransaction != transactionId) {
+          stopsJsonCache = {};
+          currentTransaction = transactionId;        
+          getNearbyStops(transactionId, index, index_end);
+        }
+        else {
+          sendStopsToPebbleJson(stopsJsonCache, transactionId, index, index_end)
+        }
         break;
       case 3: // get location
         getLocation();
