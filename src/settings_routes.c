@@ -126,6 +126,9 @@ static void WindowLoad(Window *window) {
   s_menu_layer = menu_layer_create(bounds);
   if(s_menu_layer == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL MENU LAYER");
+    ErrorWindowPush(
+      "Critical error. Out of memory. 0x100011.", 
+      true);
   }
 
 #if defined(PBL_COLOR)
@@ -160,6 +163,9 @@ void SettingsRoutesUpdate(Routes routes, Buses* buses) {
   
     if(s_window == NULL) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
+      ErrorWindowPush(
+        "Critical error. Out of memory. 0x100011.", 
+        true);
       return;
     }
     

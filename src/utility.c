@@ -1,5 +1,10 @@
 #include "utility.h"
 
+void CheckHeapMemory() {
+  app_log(APP_LOG_LEVEL_INFO, __FILE_NAME__, __LINE__, 
+      "FREE MEMORY - HEAP BYTES %u", heap_bytes_free());
+}
+
 void MenuCellDrawHeader(GContext* ctx, 
                         const Layer *cell_layer,
                         const char* text) {
@@ -72,10 +77,16 @@ void StringCopy(char* a, const char* b, uint s) {
   }
 }
 
-void StringAllocateAndCopy(char** a, const char* b) {
+bool StringAllocateAndCopy(char** a, const char* b) {
   int i = strlen(b);
   *a = (char *)malloc(sizeof(char)*(i+1));
-  memcpy(*a, b, i+1);
+  if(*a != NULL) {
+    memcpy(*a, b, i+1);
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
 void FreeAndClearPointer(void** ptr) {

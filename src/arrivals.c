@@ -71,7 +71,7 @@ Arrival ArrivalConstructor(const char* trip_id,
                            const char* predicted_arrival, 
                            const char* delta_string, 
                            const int32_t delta, 
-                           const uint32_t bus_index,
+                           const uint8_t bus_index,
                            const char arrival_code) {
                               
   Arrival arrival;

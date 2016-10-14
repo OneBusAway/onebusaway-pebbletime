@@ -20,10 +20,13 @@ static void HandleInit(AppData* appdata) {
   // Upgrade persistence (as needed)
   PersistenceVersionControl();
 
+  ErrorWindowInit();
+
   // Initialize app data
   appdata->initialized = false;
-  appdata->show_settings = true;
+  appdata->refresh_arrivals = false;
   ArrivalsConstructor(&appdata->arrivals);
+  ArrivalsConstructor(&appdata->next_arrivals);
   LoadBusesFromPersistence(&appdata->buses);
 
   // Initialize app message communication
@@ -37,14 +40,19 @@ static void HandleInit(AppData* appdata) {
 
   // Initialize windows
   MainWindowInit(appdata);
+
+  CheckHeapMemory();
 }
 
 static void HandleDeinit(AppData* appdata) {
   BusesDestructor(&appdata->buses);
   ArrivalsDestructor(appdata->arrivals);
   FreeAndClearPointer((void**)&appdata->arrivals);
+  ArrivalsDestructor(appdata->next_arrivals);
+  FreeAndClearPointer((void**)&appdata->next_arrivals);
   CommunicationDeinit();
   MainWindowDeinit();
+  ErrorWindowDeinit();
 }
 
 void AppExit() {

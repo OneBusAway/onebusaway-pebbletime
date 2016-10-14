@@ -14,12 +14,20 @@ static char* s_last_selected_trip_id;
 // for the bus and/or arival data - alternatively, create a callback to
 // to the window to trigger the actual refresh on data change events.
  
-void MainWindowCancelSettingsLoad(AppData* appdata) {
-  appdata->show_settings = false;
-}
+void MainWindowMarkForRefresh(AppData* appdata) {
+  appdata->refresh_arrivals = true;
 
-void MainWindowRefreshData(AppData* appdata) {
-  appdata->show_settings = true;
+  // stop the timer if we're going to go change the buses and then
+  // require a refresh of the arrivals
+  StopArrivalsUpdateTimer();
+
+  // save some memory since we have to refresh the data 
+  ArrivalsDestructor(appdata->arrivals);
+  ArrivalsDestructor(appdata->next_arrivals);
+
+  // refresh the menu ux, if it's showing'
+  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+  menu_layer_reload_data(s_menu_layer);
 }
 
 static void DoneLoading() {
@@ -53,7 +61,7 @@ static void UpdateLoadingFlag(AppData* appdata) {
   menu_layer_reload_data(s_menu_layer);
 }
 
-void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata) {
+void MainWindowUpdateArrivals(AppData* appdata) {
   // try to keep the same arrival selected in the menu across refreshes
   MenuIndex m = menu_layer_get_selected_index(s_menu_layer);
   if(m.section == 0) {
@@ -62,8 +70,8 @@ void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata) {
       char* trip_id = arrival->trip_id;
 
       MenuIndex set = MenuIndex(0,0);
-      for(uint i = 0; i < new_arrivals->count; i++) {
-        Arrival* new_arrival = MemListGet(new_arrivals, i);
+      for(uint i = 0; i < appdata->next_arrivals->count; i++) {
+        Arrival* new_arrival = MemListGet(appdata->next_arrivals, i);
         if(strcmp(new_arrival->trip_id, trip_id) == 0) {
           set.row = i;
           break;
@@ -77,7 +85,8 @@ void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata) {
   // move the temp arrivals to the display arrivals
   ArrivalsDestructor(appdata->arrivals);
   FreeAndClearPointer((void**)&appdata->arrivals);
-  appdata->arrivals = ArrivalsCopy(new_arrivals);
+  appdata->arrivals = appdata->next_arrivals;
+  ArrivalsConstructor(&appdata->next_arrivals);
 
 #ifndef PBL_PLATFORM_APLITE
   // update the the bus detals window, if it's being shown
@@ -395,21 +404,18 @@ static void SelectCallback(
           // special case: no nearby buses to show,
           // show Add Route shortcut instead.
           if(appdata->arrivals->count == 0) {
-            appdata->show_settings = true;
             SettingsStopsInit();
+            MainWindowMarkForRefresh(appdata);
           }
           else {
             Arrival* arrival = (Arrival*)MemListGet(appdata->arrivals, 
                 cell_index->row);
-#ifndef PBL_PLATFORM_APLITE
             // record the trip_id of the bus selected, to put the menu
             // cursor back in the right place when returning to this window
-            // uint i = arrival->bus_index;
             FreeAndClearPointer((void**)&s_last_selected_trip_id);
             char* trip_id = arrival->trip_id;
             s_last_selected_trip_id = (char*)malloc(strlen(trip_id)+1);
             StringCopy(s_last_selected_trip_id, trip_id, strlen(trip_id)+1);
-#endif
 
             // show the detail window for the bus selected
             BusDetailsWindowPush(appdata->buses.data[arrival->bus_index], 
@@ -426,9 +432,8 @@ static void SelectCallback(
       // settings menu
       switch (cell_index->row) {
         case 0:
-          appdata->show_settings = true;
           SettingsStopsInit();
-
+          MainWindowMarkForRefresh(appdata);
           break;
         default :
           APP_LOG(APP_LOG_LEVEL_ERROR, 
@@ -490,12 +495,10 @@ static void WindowAppear(Window *window) {
 
   SettingsStopsDeinit();
 
-  if(appdata->show_settings) {
+  if(appdata->refresh_arrivals) {
     // returning from settings where settings have changed, update
     // the contents of the menu
     
-    appdata->show_settings = false;
-
     if(appdata->buses.count == 0) {
       // if there are no buses saved, don't act like you're loading buses
       s_loading = false;
@@ -535,12 +538,7 @@ static void WindowAppear(Window *window) {
 }
 
 static void WindowDisappear(Window *window) {
-  // AppData* appdata = window_get_user_data(window);  
-    
-  // stop the timer if we're going to go change the routes
-  // if(appdata->show_settings) {
-    StopArrivalsUpdateTimer();
-  // }
+
 }
 
 void MainWindowInit(AppData* appdata) {

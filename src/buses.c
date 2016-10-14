@@ -2,6 +2,7 @@
 #include "utility.h"
 #include "location.h"
 #include "persistence.h"
+#include "error_window.h"
 
 void ListBuses(const Buses* buses) {
 #ifndef RELEASE
@@ -59,6 +60,9 @@ void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses) {
                                          (buses->filter_count+1));
       if(temp == NULL) {
         APP_LOG(APP_LOG_LEVEL_ERROR, "NULL FILTER POINTER");
+        ErrorWindowPush(
+            "Critical error. Out of memory. 0x100022.", 
+            true);
       }
       if(buses->filter_index != NULL) {
         memcpy(temp, buses->filter_index, sizeof(uint32_t)*buses->filter_count);
@@ -106,21 +110,23 @@ static bool CreateBus(const char* route_id,
           (int)buses->count);
 
   // create new bus
+  bool success = true;
   Bus temp_bus;
-  StringAllocateAndCopy(&temp_bus.route_id, route_id);
-  StringAllocateAndCopy(&temp_bus.stop_id, stop_id);
-  StringAllocateAndCopy(&temp_bus.route_name, route_name);
-  StringAllocateAndCopy(&temp_bus.stop_name, stop_name);
-  StringAllocateAndCopy(&temp_bus.description, description);
-  StringAllocateAndCopy(&temp_bus.direction, direction);
+  success &= StringAllocateAndCopy(&temp_bus.route_id, route_id);
+  success &= StringAllocateAndCopy(&temp_bus.stop_id, stop_id);
+  success &= StringAllocateAndCopy(&temp_bus.route_name, route_name);
+  success &= StringAllocateAndCopy(&temp_bus.stop_name, stop_name);
+  success &= StringAllocateAndCopy(&temp_bus.description, description);
+  success &= StringAllocateAndCopy(&temp_bus.direction, direction);
   temp_bus.lat = lat;
   temp_bus.lon = lon;
 
-  if(SaveBusToPersistence(&temp_bus, buses->count)) {
+  if(success && SaveBusToPersistence(&temp_bus, buses->count)) {
     // add bus to the end of buses
     Bus* temp_buses = (Bus *)malloc(sizeof(Bus)*((buses->count)+1));
     if(temp_buses == NULL) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "NULL TEMP BUSES");
+      // APP_LOG(APP_LOG_LEVEL_ERROR, "NULL TEMP BUSES");
+      BusDestructor(&temp_bus);
       return false;
     }
     if(buses->data != NULL) {
@@ -131,12 +137,13 @@ static bool CreateBus(const char* route_id,
     buses->data = temp_buses;
     buses->data[buses->count] = temp_bus;
     buses->count+=1;
-    SaveBusCountToPersistence(buses->count);
+    success = SaveBusCountToPersistence(buses->count);
   }
   else {
+    BusDestructor(&temp_bus);
     return false;
   }
-  return true;
+  return success;
 }
 
 bool AddBus(const Bus* bus, Buses* buses) {
@@ -198,6 +205,9 @@ void RemoveBus(uint32_t index, Buses *buses) {
   Bus* temp_buses = (Bus *)malloc(sizeof(Bus)*((buses->count)-1));
   if(temp_buses == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL BUS POINTER");
+    ErrorWindowPush(
+        "Critical error. Out of memory. 0x100024.", 
+        true);
   }
 
   // first part copy
@@ -232,7 +242,6 @@ void AddStop(const uint16_t index,
           stop_name,
           detail_string);
 
-
   int16_t pos = -1;
   for(int16_t i = 0; i < MemListCount(stops->memlist); i++) {
     Stop* stop = (Stop*)MemListGet(stops->memlist, i);
@@ -253,11 +262,13 @@ void AddStop(const uint16_t index,
                               lon,
                               direction);
   
+  bool success = true;
+  
   if(pos == -1) {
-    MemListAppend(stops->memlist, &temp);
+    success &= MemListAppend(stops->memlist, &temp);
   }
   else {
-    MemListInsertAfter(stops->memlist, &temp, pos);
+    success &= MemListInsertAfter(stops->memlist, &temp, pos);
   }
   
   uint16_t count = MemListCount(stops->memlist);
@@ -266,13 +277,13 @@ void AddStop(const uint16_t index,
       // trim the start of the list
       Stop* stop = (Stop*)MemListGet(stops->memlist, 0);
       StopDestructor(stop);
-      MemListRemove(stops->memlist, 0);
+      success &= MemListRemove(stops->memlist, 0);
     }
     else {
       // trim the end of the list
       Stop* stop = (Stop*)MemListGet(stops->memlist, count-1);
       StopDestructor(stop);
-      MemListRemove(stops->memlist, count-1); 
+      success &= MemListRemove(stops->memlist, count-1); 
     }
   } 
   Stop* stop = (Stop*)MemListGet(stops->memlist, 0);
@@ -284,6 +295,12 @@ void AddStop(const uint16_t index,
   stops->index_offset = stop->index; 
   
   ListStops(stops);
+
+  if(!success) {
+    ErrorWindowPush(
+        "Critical error. Out of memory. 0x100028.", 
+        true);
+  }
 }
 
 void AddRoute(const char *route_id,
@@ -298,6 +315,10 @@ void AddRoute(const char *route_id,
   Route* temp_routes = (Route*)malloc(sizeof(Route)*((routes->count)+1));
   if(temp_routes == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL ROUTES POINTER");
+    ErrorWindowPush(
+        "Critical error. Out of memory. 0x100020.", 
+        true);
+    return;
   }
   if(routes->data != NULL) {
     memcpy(temp_routes, routes->data, sizeof(Route)*(routes->count));

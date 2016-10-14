@@ -10,15 +10,17 @@
 
 static Window *s_main_window;
 static TextLayer *s_text_layer;
-static Layer *s_icon_layer;
 static Layer *s_indicator_up_layer, *s_indicator_down_layer;
 static ScrollLayer *s_scroll_layer;
 static ContentIndicator *s_indicator;
 
-static GBitmap *s_icon_bitmap;
 
 static char* s_message = NULL;
 bool s_critical_error = false;
+
+#ifndef PBL_PLATFORM_APLITE
+static Layer *s_icon_layer;
+static GBitmap *s_icon_bitmap;
 
 static void IconUpdateProc(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
@@ -31,6 +33,7 @@ static void IconUpdateProc(Layer *layer, GContext *ctx) {
                                  .size = bitmap_bounds.size
                                });
 }
+#endif
 
 static void BackSingleClickHandler(ClickRecognizerRef recognizer, 
                                    void *context) {
@@ -47,7 +50,10 @@ static void ClickConfigHandler(Window *window) {
   window_single_click_subscribe(BUTTON_ID_BACK, BackSingleClickHandler);
 }
 
-static void WindowLoad(Window *window) {
+static void WindowInit(Window *window) {
+  window_set_background_color(window, 
+    PBL_IF_COLOR_ELSE(GColorYellow, GColorLightGray));
+
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
@@ -77,7 +83,7 @@ static void WindowLoad(Window *window) {
     .alignment = GAlignCenter,
     .colors = {
       .foreground = GColorBlack,
-      .background = GColorYellow
+      .background = PBL_IF_COLOR_ELSE(GColorYellow, GColorLightGray)
     }
   };
   content_indicator_configure_direction(s_indicator, 
@@ -90,18 +96,21 @@ static void WindowLoad(Window *window) {
     .alignment = GAlignCenter,
     .colors = {
       .foreground = GColorBlack,
-      .background = GColorYellow
+      .background = PBL_IF_COLOR_ELSE(GColorYellow, GColorLightGray)
     }
   };
   content_indicator_configure_direction(s_indicator, 
                                         ContentIndicatorDirectionDown, 
                                         &down_config);
 
-  // icon layer
   uint32_t x_margin = DIALOG_MESSAGE_WINDOW_MARGIN;
   uint32_t y_margin = STATUS_BAR_LAYER_HEIGHT;
+  GRect bitmap_bounds = GRect(0,0,0,0);
+
+#ifndef PBL_PLATFORM_APLITE
+  // icon layer
   s_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_WARNING);
-  GRect bitmap_bounds = gbitmap_get_bounds(s_icon_bitmap);
+  bitmap_bounds = gbitmap_get_bounds(s_icon_bitmap);
   s_icon_layer = layer_create(PBL_IF_ROUND_ELSE(
       GRect((bounds.size.w - bitmap_bounds.size.w) / 2,
             y_margin, 
@@ -114,6 +123,7 @@ static void WindowLoad(Window *window) {
   ));
   layer_set_update_proc(s_icon_layer, IconUpdateProc);
   scroll_layer_add_child(s_scroll_layer, s_icon_layer);
+#endif
 
   // text layer
   GRect max_text_bounds = PBL_IF_ROUND_ELSE(
@@ -127,7 +137,6 @@ static void WindowLoad(Window *window) {
             2000)
   );
   s_text_layer = text_layer_create(max_text_bounds);
-  text_layer_set_text(s_text_layer, s_message);
   text_layer_set_background_color(s_text_layer, GColorClear);
   text_layer_set_text_alignment(s_text_layer,
       PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft));
@@ -137,15 +146,6 @@ static void WindowLoad(Window *window) {
 
   // add the scroll layer window
   layer_add_child(window_layer, scroll_layer_get_layer(s_scroll_layer));
-
-  GSize max_size = text_layer_get_content_size(s_text_layer);
-  //text_layer_set_size(s_text_layer, max_size);
-
-  // TODO: there are boundary conditions for which this may not work. This was
-  // tuned for some specific text strings and may require adjustment for others.
-  scroll_layer_set_content_size(s_scroll_layer,
-    PBL_IF_ROUND_ELSE(GSize(max_size.w, max_size.h + (4 * y_margin)),
-                      GSize(max_size.w, max_size.h + (4 * y_margin))));
 
   // set the scroll layer's paging, properties
   text_layer_enable_screen_text_flow_and_paging(s_text_layer, 6);
@@ -158,14 +158,35 @@ static void WindowLoad(Window *window) {
     .click_config_provider = (ClickConfigProvider) ClickConfigHandler,
     .content_offset_changed_handler = NULL };
   scroll_layer_set_callbacks(s_scroll_layer, callbacks);
+
+}
+
+static void WindowLoad(Window *window) {
+  text_layer_set_text(s_text_layer, s_message);
+  layer_mark_dirty(text_layer_get_layer(s_text_layer));
+
+  GSize max_size = text_layer_get_content_size(s_text_layer);
+  //text_layer_set_size(s_text_layer, max_size);
+
+  // TODO: there are boundary conditions for which this may not work. This was
+  // tuned for some specific text strings and may require adjustment for others.
+  uint32_t y_margin = STATUS_BAR_LAYER_HEIGHT;
+  scroll_layer_set_content_size(s_scroll_layer,
+    PBL_IF_ROUND_ELSE(GSize(max_size.w, max_size.h + (4 * y_margin)),
+                      GSize(max_size.w, max_size.h + (4 * y_margin))));
+
+  scroll_layer_set_content_offset(s_scroll_layer, GPointZero, false);
+  layer_mark_dirty(scroll_layer_get_layer(s_scroll_layer));
 }
 
 static void WindowUnload(Window *window) {
+#ifndef PBL_PLATFORM_APLITE
   layer_destroy(s_icon_layer);
+  gbitmap_destroy(s_icon_bitmap);
+#endif
   layer_destroy(s_indicator_up_layer);
   layer_destroy(s_indicator_down_layer);
   text_layer_destroy(s_text_layer);
-  gbitmap_destroy(s_icon_bitmap);
   content_indicator_destroy(s_indicator);
   scroll_layer_destroy(s_scroll_layer);
   window_destroy(window);
@@ -173,28 +194,43 @@ static void WindowUnload(Window *window) {
   FreeAndClearPointer((void**)&s_message);
 }
 
-void ErrorWindowPush(const char* message, bool critical) {
+void ErrorWindowInit() {
+  // reserve memory to be able to display the error window
+  // even in low memory conditions
   if(!s_main_window) {
     s_main_window = window_create();
-    window_set_background_color(s_main_window, 
-        PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite));
+    if(s_main_window == NULL) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, 
+          "CAN'T ALLOCATE ERROR WINDOW MEMORY. GIVE UP. ALL HOPE IS LOST.")
+    }
+    WindowInit(s_main_window);
     window_set_window_handlers(s_main_window, (WindowHandlers) {
         .load = WindowLoad,
-        .unload = WindowUnload,
+    //     .unload = WindowUnload,
     });
   }
+  s_message = malloc(sizeof(char)*MAX_ERROR_STRING_LENGTH);
+  if(s_message == NULL) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, 
+        "CAN'T ALLOCATE ERROR WINDOW MEMORY. GIVE UP. ALL HOPE IS LOST.")
+  }
+}
 
+void ErrorWindowPush(const char* message, bool critical) {
   s_critical_error = critical;
-  FreeAndClearPointer((void**)&s_message);
-  int i = strlen(message);
-  s_message = (char *)malloc(sizeof(char)*(i+1));
-  StringCopy(s_message, message, i+1);
-
+  int i = MIN(strlen(message)+1, MAX_ERROR_STRING_LENGTH);
+  StringCopy(s_message, message, i);
   window_stack_push(s_main_window, true);
 }
 
 void ErrorWindowRemove() {
   if(s_main_window) {
     window_stack_remove(s_main_window, true);
+  }
+}
+
+void ErrorWindowDeinit() {
+  if(s_main_window) {
+    WindowUnload(s_main_window);
   }
 }

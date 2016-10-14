@@ -8,7 +8,6 @@
 static AppTimer *s_timer;
 static Stops *s_nearby_stops;
 static Routes s_nearby_routes;
-static Arrivals *s_temp_arrivals;
 static sll s_cached_lat;
 static sll s_cached_lon;
 static uint32_t s_outstanding_requests;
@@ -256,9 +255,6 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
   // make sure any new/removed buses are (in)visible as they should be
   FilterBusesByCachedLocation(buses);
 
-  // clear temp arrivals before getting new ones
-  ArrivalsDestructor(s_temp_arrivals);
-
   // build the strings of stop/route pairs
   char* busList = NULL;
   for(uint i = 0; i < buses->filter_count; i++) {
@@ -311,12 +307,14 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
 }
 
 void UpdateArrivals(AppData* appdata) {
-  if((appdata->buses.count == 0) || appdata->show_settings) {
-    // reset/clear arrivals if there are no buses at all, or a reset of the
-    // view has been triggered
+  appdata->refresh_arrivals = false;
+
+  if(appdata->buses.count == 0) {
+    // reset/clear arrivals if there are no buses
     ArrivalsDestructor(appdata->arrivals);
   }
   else {
+    ArrivalsDestructor(appdata->next_arrivals);
     SendAppMessageUpdateArrivals(&appdata->buses);
   }
 }
@@ -365,7 +363,7 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
                    arrival_delta_tuple->value->int32,
                    *(arrivalCode_tuple->value->cstring),
                    &appdata->buses,
-                   s_temp_arrivals);
+                   appdata->next_arrivals);
       }
 
       if(s_outstanding_requests == 0) {
@@ -373,10 +371,7 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
                 "----Completed transaction id: %u",
                 (uint)s_transaction_id);
 
-        MainWindowUpdateArrivals(s_temp_arrivals, appdata);
-         
-        // prevent a double free later
-        ArrivalsDestructor(s_temp_arrivals);
+        MainWindowUpdateArrivals(appdata);
       }
     }
   }
@@ -405,9 +400,8 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
      direction_tuple && transaction_id_tuple && index_tuple) {
 
     AppData* appdata = context;
-    // active transaction? user canceled settings menu?
-    if((transaction_id_tuple->value->uint32 == s_transaction_id)
-       && appdata->show_settings) {
+    // active transaction?
+    if(transaction_id_tuple->value->uint32 == s_transaction_id) {
 
       // TODO: A better way to resolve this would be to up the transaction
       // id upon canceled transactions instead of checking to see if 
@@ -630,7 +624,6 @@ static void OutboxSentCallback(DictionaryIterator *iterator, void *context) {
 void CommunicationInit(AppData* appdata) {
   s_timer = NULL;
   RoutesConstructor(&s_nearby_routes);
-  ArrivalsConstructor(&s_temp_arrivals);
   s_cached_lat = CONST_0;
   s_cached_lon = CONST_0;
   s_outstanding_requests = 0;
@@ -647,13 +640,10 @@ void CommunicationInit(AppData* appdata) {
 
   // Open app message
   app_message_open(1024, 1024);
-
 }
 
 void CommunicationDeinit() {
   StopArrivalsUpdateTimer();
   RoutesDestructor(&s_nearby_routes);
-  ArrivalsDestructor(s_temp_arrivals);
-  FreeAndClearPointer((void**)&s_temp_arrivals);
   app_message_deregister_callbacks();
 }

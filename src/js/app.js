@@ -672,6 +672,9 @@ function getLocationSuccess(attempts, pos) {
   }
 }
 
+/**
+ * parse json from nearby stops request and send stops to the watch
+ */
 function sendStopsToPebbleJson(json, transactionId, index, index_end) {
   var routeStrings = buildStopRouteStrings(json);
 

@@ -10,8 +10,7 @@
 
 void MainWindowInit(AppData* appdata);
 void MainWindowDeinit();
-void MainWindowUpdateArrivals(Arrivals* new_arrivals, AppData* appdata);
-void MainWindowRefreshData(AppData* appdata);
-void MainWindowCancelSettingsLoad(AppData* appdata);
+void MainWindowUpdateArrivals(AppData* appdata);
+void MainWindowMarkForRefresh(AppData* appdata);
 
 #endif //MAIN_WINDOW_H

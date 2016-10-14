@@ -1,9 +1,6 @@
 #include "location.h"
 #include "utility.h"
 
-#define max(x,y) (x > y ? x : y)
-#define min(x,y) (x > y ? y : x)
-
 // sll functions not provided by math-sll.h
 //   sll slldeg2rad(sll);
 //   sll sllabs(sll);
@@ -32,8 +29,8 @@ sll sllabs(sll x) {
 sll sllatan2(sll y, sll x) {
   sll abs_x = sllabs(x);
   sll abs_y = sllabs(y);
-  sll maxyx = max(abs_x, abs_y);
-  sll minyx = min(abs_x, abs_y);
+  sll maxyx = MAX(abs_x, abs_y);
+  sll minyx = MIN(abs_x, abs_y);
 
   sll a = slldiv(minyx, maxyx);
   sll s = sllmul(a, a);

@@ -7,7 +7,8 @@
 typedef struct {
   Buses buses;
   Arrivals* arrivals;
-  bool show_settings;
+  Arrivals* next_arrivals;
+  bool refresh_arrivals;
   bool initialized;
 } AppData;
 

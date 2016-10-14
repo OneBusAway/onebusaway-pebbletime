@@ -56,6 +56,8 @@ bool MemListInsertAfter(MemList* list, void* object, uint16_t pos) {
   
   void* temp_data = malloc(list->object_size*(list->count+1));
   if(temp_data == NULL) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "null - size:%u count:%u", 
+        (uint)list->object_size, (uint)list->count);
     return false;
   }
   
@@ -79,6 +81,11 @@ bool MemListInsertAfter(MemList* list, void* object, uint16_t pos) {
 
 MemList* MemListCopy(const MemList* list) {
   MemList* ret_list = malloc(sizeof(MemList));
+  if(ret_list == NULL) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "null - size:%u count:%u", 
+        (uint)list->object_size, (uint)list->count);
+    return NULL;
+  }
   memcpy(ret_list, list, sizeof(MemList));
   uint16_t size = list->object_size*(list->count);
   void* temp_data = malloc(size);

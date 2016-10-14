@@ -10,7 +10,7 @@ typedef struct Arrival {
   char* predicted_arrival;
   char* scheduled_arrival;
   int32_t delta;
-  uint32_t bus_index;
+  uint8_t bus_index;
   char arrival_code;
 } __attribute__((__packed__)) Arrival;
 
@@ -37,7 +37,7 @@ Arrival ArrivalConstructor(const char* trip_id,
                            const char* predicted_arrival, 
                            const char* delta_string, 
                            const int32_t delta, 
-                           const uint32_t bus_index, 
+                           const uint8_t bus_index, 
                            const char arrival_code);
 Arrival ArrivalCopy(const Arrival*);
 void ArrivalDestructor(Arrival*);

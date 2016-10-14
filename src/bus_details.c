@@ -62,7 +62,7 @@ static void ActionMenuCallback(ActionMenu* action_menu,
                                     s_content.bus.route_id, 
                                     &appdata->buses);
     RemoveBus(bus_index, &appdata->buses);
-    MainWindowRefreshData(appdata);
+    MainWindowMarkForRefresh(appdata);
     BusDetailsWindowRemove();
   }
   else if(item == 1) {
@@ -72,14 +72,11 @@ static void ActionMenuCallback(ActionMenu* action_menu,
           "Can't save favorite.\n\nMaximum number of favorite buses reached.", 
           false);
     }
-    MainWindowRefreshData(appdata);
+    MainWindowMarkForRefresh(appdata);
     BusDetailsWindowRemove();
   }
   else if(item == 2) {
-    // Start progress window
-    MainWindowRefreshData(appdata);
-    // ProgressWindowPush(appdata);
-    
+    MainWindowMarkForRefresh(appdata);
     // kick off request for routes for the stops
     
     // TOOD: memory leak - should have SendAppMessageGetRoutesForStop clean
@@ -91,7 +88,6 @@ static void ActionMenuCallback(ActionMenu* action_menu,
                                 s_content.bus.lat,
                                 s_content.bus.lon,
                                 s_content.bus.direction);
-    // SendAppMessageGetRoutesForStop(&stop);
     SettingsRoutesInit(stop, &appdata->buses);
     // TODO: where does Deinit get called?
     BusDetailsWindowRemove();
@@ -554,12 +550,9 @@ void BusDetailsWindowPush(
     });
   }
   window_stack_push(s_window, true);
-#endif //PBL_PLATFORM_APLITE
 
-#ifdef PBL_PLATFORM_APLITE
-
+#else //PBL_PLATFORM_APLITE
   ShowActionMenu(appdata);
-
 #endif //PBL_PLATFORM_APLITE
 
 }
@@ -615,5 +608,6 @@ void BusDetailsWindowRemove(void) {
     window_stack_remove(s_window, true);
   }
 #endif
+  ArrivalDestructor(&s_content.arrival);
 }
 
