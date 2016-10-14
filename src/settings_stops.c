@@ -142,12 +142,14 @@ void SettingsStopsUpdate(Stops *stops, Buses* buses) {
   if(s_window) {
     // s_nearby_stops = stops;
 
+#ifndef RELEASE
     Stop* stop = (Stop*)MemListGet(s_nearby_stops.memlist, 0);
-
+#endif
     APP_LOG(APP_LOG_LEVEL_DEBUG, 
             "SettingsStopsUpdate - stop0: %s, new_index_offset:%u", 
             stop->stop_name, 
             (uint)stop->index);
+
     window_set_user_data(s_window, buses);
     
     if(!window_stack_contains_window(s_window)) {
