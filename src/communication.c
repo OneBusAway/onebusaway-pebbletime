@@ -242,7 +242,7 @@ static void FilterBusesByCachedLocation(Buses* buses) {
 //   SendAppMessageUpdateArrivals(context);
 // }
 
-static void SendAppMessageUpdateArrivals(Buses* buses) {
+static void SendAppMessageUpdateArrivals(AppData* appdata) {
   // if(s_outstanding_requests > 0) {
   //   // wait until the app message queue is clear
   //   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageUpdateArrivals: ...waiting...");
@@ -253,6 +253,8 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
   APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageUpdateArrivals - start");
 
   CancelOutstandingRequests();
+
+  Buses* buses = &appdata->buses;
 
   // make sure any new/removed buses are (in)visible as they should be
   FilterBusesByCachedLocation(buses);
@@ -306,6 +308,14 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
     
     free(busList);
   }
+  else {
+    // no nearby buses to update
+    APP_LOG(APP_LOG_LEVEL_INFO, 
+        "----Completed transaction id: %u",
+        (uint)s_transaction_id);
+
+    MainWindowUpdateArrivals(appdata);
+  }
 }
 
 void UpdateArrivals(AppData* appdata) {
@@ -321,7 +331,7 @@ void UpdateArrivals(AppData* appdata) {
   }
   else {
     ArrivalsDestructor(appdata->next_arrivals);
-    SendAppMessageUpdateArrivals(&appdata->buses);
+    SendAppMessageUpdateArrivals(appdata);
   }
 }
 
