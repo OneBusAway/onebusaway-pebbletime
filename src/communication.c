@@ -250,6 +250,8 @@ static void SendAppMessageUpdateArrivals(Buses* buses) {
   //   return;
   // }
 
+  APP_LOG(APP_LOG_LEVEL_INFO, "SendAppMessageUpdateArrivals - start");
+
   CancelOutstandingRequests();
 
   // make sure any new/removed buses are (in)visible as they should be
@@ -312,6 +314,10 @@ void UpdateArrivals(AppData* appdata) {
   if(appdata->buses.count == 0) {
     // reset/clear arrivals if there are no buses
     ArrivalsDestructor(appdata->arrivals);
+
+    // the completion of the first UpdateArrivals marks the
+    // app state as being initialized
+    appdata->initialized = true;
   }
   else {
     ArrivalsDestructor(appdata->next_arrivals);
@@ -534,7 +540,6 @@ static void HandleAppMessageLocation(DictionaryIterator *iterator,
     s_cached_lon = dbl2sll(lon);
 
     AppData* appdata = context;
-    appdata->initialized = true;
 
     s_outstanding_requests = 0;
 

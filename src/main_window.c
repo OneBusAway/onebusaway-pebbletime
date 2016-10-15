@@ -4,6 +4,7 @@
 #include "communication.h"
 #include "utility.h"
 #include "settings_stops.h"
+#include "error_window.h"
 
 static Window *s_main_window;
 static MenuLayer *s_menu_layer;
@@ -92,6 +93,10 @@ void MainWindowUpdateArrivals(AppData* appdata) {
   // update the the bus detals window, if it's being shown
   BusDetailsWindowUpdate(appdata);
 #endif
+  
+  // the completion of the first UpdateArrivals marks the
+  // app state as being initialized
+  appdata->initialized = true;
 
   // show the data, all arrivals are in
   DoneLoading();
@@ -276,21 +281,21 @@ static void DrawRowCallback(GContext *ctx,
             if(appdata->buses.count != 0 && appdata->buses.filter_count == 0) {
               menu_cell_basic_draw(ctx, 
                                    cell_layer, 
-                                   "Add Favorites", 
+                                   "Sorry", 
                                     "No favorites nearby", 
                                     NULL);
             }
             else if(appdata->buses.count == 0) {
               menu_cell_basic_draw(ctx, 
                                    cell_layer, 
-                                   "Add Favorites", 
+                                   "Sorry", 
                                    "No favorites saved", 
                                    NULL);
             }
             else {
               menu_cell_basic_draw(ctx, 
                                    cell_layer,
-                                   "Add Favorites", 
+                                   "Sorry", 
                                    "No upcoming arrivals", 
                                    NULL);
             }
@@ -401,11 +406,9 @@ static void SelectCallback(
       // While loading at first launch, don't allow interaction on the routes
       if(!s_loading) {
         if(cell_index->row <= appdata->arrivals->count) {
-          // special case: no nearby buses to show,
-          // show Add Route shortcut instead.
+          // special case: no nearby buses to show
           if(appdata->arrivals->count == 0) {
-            SettingsStopsInit();
-            MainWindowMarkForRefresh(appdata);
+            VibeMicroPulse();
           }
           else {
             Arrival* arrival = (Arrival*)MemListGet(appdata->arrivals, 
@@ -432,8 +435,14 @@ static void SelectCallback(
       // settings menu
       switch (cell_index->row) {
         case 0:
-          SettingsStopsInit();
-          MainWindowMarkForRefresh(appdata);
+          // Add Favorites
+          if(appdata->initialized) {
+            SettingsStopsInit();
+            MainWindowMarkForRefresh(appdata);
+          }
+          else {
+            ErrorWindowPush("App still loading.\n\nPlease wait before entering settings.", false);
+          }
           break;
         default :
           APP_LOG(APP_LOG_LEVEL_ERROR, 

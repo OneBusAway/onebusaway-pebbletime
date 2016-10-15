@@ -22,5 +22,6 @@ void MenuCellDraw(GContext *ctx,
 void StringCopy(char* a, const char* b, uint s);
 bool StringAllocateAndCopy(char** a, const char* b);
 void FreeAndClearPointer(void** ptr);
+void VibeMicroPulse();
 
 #endif /* end of include guard: UTILITY_H */

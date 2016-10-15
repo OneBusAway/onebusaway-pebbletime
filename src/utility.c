@@ -93,3 +93,12 @@ void FreeAndClearPointer(void** ptr) {
   free(*ptr);
   *ptr = NULL;
 }
+
+void VibeMicroPulse() {
+  static const uint32_t const segments[] = {50};
+  VibePattern pat = {
+    .durations = segments,
+    .num_segments = ARRAY_LENGTH(segments),
+  };
+  vibes_enqueue_custom_pattern(pat);
+}
