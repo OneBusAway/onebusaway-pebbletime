@@ -124,7 +124,7 @@ static uint16_t GetNumRowsCallback(MenuLayer *menu_layer,
       break;
     // settings
     case 1:
-      return 1;
+      return 3;
       break;
     default:
       return 0;
@@ -364,6 +364,12 @@ static void DrawRowCallback(GContext *ctx,
         case 0:
           menu_cell_basic_draw(ctx, cell_layer, "Add Favorites", NULL, NULL);
           break;
+        case 1:
+          menu_cell_basic_draw(ctx, cell_layer, "Manage Favorites", NULL, NULL);
+          break;
+        case 2:
+          menu_cell_basic_draw(ctx, cell_layer, "Search Radius", NULL, NULL);
+          break;
         default :
           APP_LOG(APP_LOG_LEVEL_ERROR, "Unknown Settings Menu Option");
           break;
@@ -433,12 +439,31 @@ static void SelectCallback(
       break;
     case 1:
       // settings menu
+      MainWindowMarkForRefresh(appdata);
+      
       switch (cell_index->row) {
         case 0:
           // Add Favorites
           if(appdata->initialized) {
             SettingsStopsInit();
-            MainWindowMarkForRefresh(appdata);
+          }
+          else {
+            ErrorWindowPush("App still loading.\n\nPlease wait before entering settings.", false);
+          }
+          break;
+        case 1:
+          // Manage Favorites
+          if(appdata->initialized) {
+            // SettingsStopsInit();
+          }
+          else {
+            ErrorWindowPush("App still loading.\n\nPlease wait before entering settings.", false);
+          }
+          break;
+        case 2:
+          // Search Radius
+          if(appdata->initialized) {
+            // SettingsStopsInit();
           }
           else {
             ErrorWindowPush("App still loading.\n\nPlease wait before entering settings.", false);
