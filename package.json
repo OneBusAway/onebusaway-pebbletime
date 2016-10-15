@@ -44,7 +44,7 @@
       "AppMessage_count": 22
     },
     "enableMultiJS": true,
-    "displayName": "OneBusAway for Pebble Time",
+    "displayName": "OneBusAway",
     "watchapp": {
       "onlyShownOnCommunication": false,
       "hiddenApp": false,

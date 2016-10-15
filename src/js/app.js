@@ -160,7 +160,7 @@ function xhrRequest(url, type, callback) {
   }
 
   function xhrRequestDo() {
-    console.log('xhrRequest: starting ' + url);
+    // console.log('xhrRequest: starting ' + url);
     var xhr = new XMLHttpRequest();
     xhr.timeout = HTTP_REQUEST_TIMEOUT*(attempts+1);
     xhr.onload = function () {
