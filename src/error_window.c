@@ -201,7 +201,7 @@ void ErrorWindowInit() {
     s_main_window = window_create();
     if(s_main_window == NULL) {
       APP_LOG(APP_LOG_LEVEL_ERROR, 
-          "CAN'T ALLOCATE ERROR WINDOW MEMORY. GIVE UP. ALL HOPE IS LOST.")
+          "CAN'T ALLOCATE ERROR WINDOW MEMORY. GIVE UP. ALL HOPE IS LOST.");
     }
     WindowInit(s_main_window);
     window_set_window_handlers(s_main_window, (WindowHandlers) {
@@ -212,7 +212,7 @@ void ErrorWindowInit() {
   s_message = malloc(sizeof(char)*MAX_ERROR_STRING_LENGTH);
   if(s_message == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, 
-        "CAN'T ALLOCATE ERROR WINDOW MEMORY. GIVE UP. ALL HOPE IS LOST.")
+        "CAN'T ALLOCATE ERROR WINDOW MEMORY. GIVE UP. ALL HOPE IS LOST.");
   }
 }
 

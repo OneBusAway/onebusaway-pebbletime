@@ -5,7 +5,7 @@
 #include "error_window.h"
 
 void ListBuses(const Buses* buses) {
-#ifndef RELEASE
+#ifdef LOGGING_ENABLED
   APP_LOG(APP_LOG_LEVEL_INFO, "Number of buses:%u", (uint)buses->count);
   for(uint32_t i = 0; i < buses->count; i++)  {
     Bus b = buses->data[i];
@@ -20,7 +20,7 @@ void ListBuses(const Buses* buses) {
 }
 
 void ListStops(const Stops* stops) {
-#ifndef RELEASE
+#ifdef LOGGING_ENABLED
   APP_LOG(APP_LOG_LEVEL_INFO, "Number of stops:%u", (uint)stops->total_size);
   APP_LOG(APP_LOG_LEVEL_INFO, 
           "Number of memlist entries:%u @ offset: %u", 

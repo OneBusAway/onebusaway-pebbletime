@@ -142,7 +142,7 @@ void SettingsStopsUpdate(Stops *stops, Buses* buses) {
   if(s_window) {
     // s_nearby_stops = stops;
 
-#ifndef RELEASE
+#ifdef LOGGING_ENABLED
     Stop* stop = (Stop*)MemListGet(s_nearby_stops.memlist, 0);
 #endif
     APP_LOG(APP_LOG_LEVEL_DEBUG, 

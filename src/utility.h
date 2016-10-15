@@ -3,7 +3,7 @@
 
 #include <pebble.h>
 
-#ifdef RELEASE
+#ifndef LOGGING_ENABLED
 #undef APP_LOG
 #define APP_LOG(...)
 #endif

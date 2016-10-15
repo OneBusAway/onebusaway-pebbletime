@@ -5,7 +5,7 @@ void PersistenceVersionControl() {
   persist_write_int(PERSIST_KEY_VERSION, PERSISTENCE_VERSION);
 }
 
-#ifndef RELEASE
+#ifndef LOGGING_ENABLED
 // Persistant storage error translator
 const char *TranslateStorageError(const status_t result) {
   switch (result) {

@@ -15,7 +15,7 @@ static uint32_t s_transaction_id;
 static uint32_t s_skipped_arrival_updates;
 static uint32_t s_last_outstanding_request_at_skipped;
 
-#ifndef RELEASE
+#ifdef LOGGING_ENABLED
 // AppMessage error translators
 const char *TranslateError(const AppMessageResult result) {
   switch (result) {

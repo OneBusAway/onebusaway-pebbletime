@@ -9,10 +9,10 @@ import os.path
 top = '.'
 out = 'build'
 
-
 def options(ctx):
     ctx.load('pebble_sdk')
-
+    ctx.add_option('--logging', action='store_true', default=False,
+                   help="Enable logging on the build")
 
 def configure(ctx):
     """
@@ -22,6 +22,8 @@ def configure(ctx):
     correct environment first.
     Universal configuration: add your change prior to calling ctx.load('pebble_sdk').
     """
+    if ctx.options.logging:
+        ctx.env.append_value('DEFINES', 'LOGGING_ENABLED')
     ctx.load('pebble_sdk')
 
 def build(ctx):
@@ -33,9 +35,6 @@ def build(ctx):
     for p in ctx.env.TARGET_PLATFORMS:
         ctx.set_env(ctx.all_envs[p])
         ctx.set_group(ctx.env.PLATFORM_NAME)
-        
-        # RELEASE flag optimizes code by disabling logging
-        ctx.env.CFLAGS.append('-DRELEASE')
         
         # math-sll arm assembly requirements 
         # (see https://wiki.ubuntu.com/ARM/Thumb2)

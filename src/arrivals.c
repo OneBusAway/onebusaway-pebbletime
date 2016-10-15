@@ -3,7 +3,7 @@
 #include "utility.h"
 
 void ListArrivals(const Arrivals* arrivals) {
-#ifndef RELEASE
+#ifdef LOGGING_ENABLED
   APP_LOG(APP_LOG_LEVEL_INFO, "Number of arrivals:%u", (uint)arrivals->count);
   for(uint32_t i = 0; i < arrivals->count; i++)  {
     Arrival* a = (Arrival*)MemListGet(arrivals, i);
