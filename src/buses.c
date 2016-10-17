@@ -41,6 +41,27 @@ void ListStops(const Stops* stops) {
 #endif
 }
 
+void CreateStopsFromBuses(const Buses* buses, Stops* stops) {
+  bool success = true;
+
+  // TODO - DEDUPE STOPS AS THEY'RE ADDED
+  for(uint32_t i = 0; i < buses->count; i++)  {
+    Bus b = buses->data[i];
+    Stop s = StopConstructor(0 /*index*/,
+                             b.stop_id,
+                             b.stop_name,
+                             b.route_name /*should append to this*/,
+                             b.lat,
+                             b.lon,
+                             b.direction);
+    success &= MemListAppend(stops->memlist, &s);
+    stops->total_size += 1;
+  }
+  if(!success) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed adding stops");  
+  }
+}
+
 void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Filtering buses by location:");
   buses->filter_count = 0;

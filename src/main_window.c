@@ -5,16 +5,13 @@
 #include "utility.h"
 #include "settings_stops.h"
 #include "error_window.h"
+#include "manage_stops.h"
 
 static Window *s_main_window;
 static MenuLayer *s_menu_layer;
 static bool s_loading;
 static char* s_last_selected_trip_id;
 
-// TODO: rename appdata.show_settings as more like 'needs refresh'
-// for the bus and/or arival data - alternatively, create a callback to
-// to the window to trigger the actual refresh on data change events.
- 
 void MainWindowMarkForRefresh(AppData* appdata) {
   appdata->refresh_arrivals = true;
 
@@ -454,7 +451,7 @@ static void SelectCallback(
         case 1:
           // Manage Favorites
           if(appdata->initialized) {
-            // SettingsStopsInit();
+            ManageStopsInit(appdata);
           }
           else {
             ErrorWindowPush("App still loading\n\nPlease wait before entering settings", false);

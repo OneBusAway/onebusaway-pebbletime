@@ -1,19 +1,11 @@
-#include <pebble.h>
-#include "settings_stops.h"
-#include "settings_routes.h"
-//#include "main.h"
+#include "manage_stops.h"
 #include "utility.h"
-#include "progress_window.h"
 #include "communication.h"
+#include "buses.h"
 
 static Window *s_window;
 static MenuLayer *s_menu_layer;
-static Stops s_nearby_stops;
-
-static void SelectionChanged(struct MenuLayer *menu_layer, 
-                             MenuIndex new_index, 
-                             MenuIndex old_index, 
-                             void *context);
+static Stops s_stops;
 
 static uint16_t GetNumSectionsCallback(MenuLayer *menu_layer, void *data) {
   return 1;
@@ -22,7 +14,7 @@ static uint16_t GetNumSectionsCallback(MenuLayer *menu_layer, void *data) {
 static uint16_t GetNumRowsCallback(MenuLayer *menu_layer, 
                                    uint16_t section_index, 
                                    void *context) {
-  return (s_nearby_stops.total_size > 0) ? s_nearby_stops.total_size : 1;
+  return (s_stops.total_size > 0) ? s_stops.total_size : 1;
 }
 
 static int16_t GetHeaderHeightCallback(MenuLayer *menu_layer, 
@@ -35,24 +27,23 @@ static void DrawHeaderCallback(GContext* ctx,
                                const Layer *cell_layer, 
                                uint16_t section_index, 
                                void *data) {
-  MenuCellDrawHeader(ctx, cell_layer, "Stops nearby");
+  MenuCellDrawHeader(ctx, cell_layer, "Favorite Stops");
 }
 
 static void DrawRowCallback(GContext *ctx, 
                             const Layer *cell_layer,
                             MenuIndex *cell_index,
                             void *context) {
-  if(cell_index->row <= s_nearby_stops.total_size) {
-    if(s_nearby_stops.total_size == 0) {
-      menu_cell_basic_draw(ctx, cell_layer, "Sorry", "No stops nearby", NULL);
+  if(cell_index->row <= s_stops.total_size) {
+    if(s_stops.total_size == 0) {
+      menu_cell_basic_draw(ctx, cell_layer, "Sorry", "No favorite stops", NULL);
     }
     else {
-      int16_t index = cell_index->row - s_nearby_stops.index_offset;
-      if ((index >= 0) && (index < MemListCount(s_nearby_stops.memlist))) {
+      int16_t index = cell_index->row;
+      if ((index >= 0) && (index < MemListCount(s_stops.memlist))) {
         // TODO: arbitrary constant - consider removing
         char stopInfo[55];
-        Stop* s = MemListGet(s_nearby_stops.memlist, 
-                             cell_index->row - s_nearby_stops.index_offset);
+        Stop* s = MemListGet(s_stops.memlist, index);
         if(strlen(s->direction) > 0) {
           snprintf(stopInfo, 
                   sizeof(stopInfo),
@@ -87,11 +78,11 @@ static int16_t GetCellHeightCallback(struct MenuLayer *menu_layer,
 static void SelectCallback(struct MenuLayer *menu_layer, 
                            MenuIndex *cell_index, 
                            void *context) {
-  if(cell_index->row <= s_nearby_stops.total_size) {
-    if(s_nearby_stops.total_size != 0) {
-      Stop *stop = MemListGet(s_nearby_stops.memlist, 
-                              cell_index->row - s_nearby_stops.index_offset);
-      SettingsRoutesInit(*stop, (Buses*)context);
+  if(cell_index->row <= s_stops.total_size) {
+    if(s_stops.total_size != 0) {
+      Stop *stop = MemListGet(s_stops.memlist, 
+                              cell_index->row);
+      VibeMicroPulse(); //SettingsRoutesInit(*stop, (Buses*)context);
     }
     else {
       // nudge - no action to take
@@ -99,7 +90,7 @@ static void SelectCallback(struct MenuLayer *menu_layer,
     }
   }
   else {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "SelectCallback: too many buses");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "SelectCallback: too many stops");
   }
 }
 
@@ -107,7 +98,11 @@ static void WindowLoad(Window* window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  Buses* buses = window_get_user_data(window);
+  AppData* appdata = window_get_user_data(window);
+
+  // build list of stops from all buses
+  StopsConstructor(&s_stops);
+  CreateStopsFromBuses(&appdata->buses, &s_stops);
 
   s_menu_layer = menu_layer_create(bounds);
   if(s_menu_layer == NULL) {
@@ -119,94 +114,28 @@ static void WindowLoad(Window* window) {
   menu_layer_set_highlight_colors(s_menu_layer, GColorBlue, GColorWhite);
 #endif
 
-  menu_layer_set_callbacks(s_menu_layer, buses, (MenuLayerCallbacks) {
+  menu_layer_set_callbacks(s_menu_layer, appdata, (MenuLayerCallbacks) {
     .get_num_sections = GetNumSectionsCallback,
     .get_num_rows = GetNumRowsCallback,
     .get_header_height = GetHeaderHeightCallback,
     .draw_header = DrawHeaderCallback,
     .draw_row = DrawRowCallback,
     .get_cell_height = GetCellHeightCallback,
-    .select_click = SelectCallback,
-    .selection_changed = SelectionChanged
+    .select_click = SelectCallback
   });
 
   // Bind the menu layer's click config provider to the window for interactivity
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
-  
-  vibes_short_pulse();
 }
 
 static void WindowUnload(Window *window) {
-  StopsDestructor(&s_nearby_stops);
-  SettingsRoutesDeinit();
+  StopsDestructor(&s_stops);
   menu_layer_destroy(s_menu_layer);
 }
 
-void SettingsStopsUpdate(Stops *stops, Buses* buses) {
-  if(s_window) {
-    // s_nearby_stops = stops;
-
-#ifdef LOGGING_ENABLED
-    Stop* stop = (Stop*)MemListGet(s_nearby_stops.memlist, 0);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, 
-            "SettingsStopsUpdate - stop0: %s, new_index_offset:%u", 
-            stop->stop_name, 
-            (uint)stop->index);
-#endif
-
-    window_set_user_data(s_window, buses);
-    
-    if(!window_stack_contains_window(s_window)) {
-      window_stack_push(s_window, true);
-      ProgressWindowRemove();
-    }
-    else {
-      layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
-      menu_layer_reload_data(s_menu_layer);        
-    }
-  }
-}
-
-static void SelectionChanged(struct MenuLayer *menu_layer, 
-                             MenuIndex new_index, 
-                             MenuIndex old_index, 
-                             void *context) {
-    
-  bool down = new_index.row > old_index.row;
-  
-  uint16_t offset = s_nearby_stops.index_offset;
-  uint16_t buffer_end_index = MemListCount(s_nearby_stops.memlist) + 
-                              offset - 1;
-  
-  if(down) {
-    if(new_index.row + 4 >= buffer_end_index) {
-      // close to the end of the current buffer
-      if(buffer_end_index < s_nearby_stops.total_size - 1) {
-        SendAppMessageGetNearbyStops(buffer_end_index+1, 5);
-      }
-    }
-  }
-  else {
-    if(new_index.row - 4 <= offset) {
-      // close to the start of the current buffer
-      if(offset > 0) {
-        uint16_t index = offset > 5 ? offset - 5 : 0;
-        APP_LOG(APP_LOG_LEVEL_DEBUG, 
-                "up: offset:%u index: %u", 
-                (uint)offset, 
-                (uint)index);
-        SendAppMessageGetNearbyStops(index, 5);
-      }
-    }
-  }
-  
-  ListStops(&s_nearby_stops);
-}
-
-
-void SettingsStopsInit() {
+void ManageStopsInit(AppData* appdata) {
   s_menu_layer = NULL;
   s_window = window_create();
   if(s_window == NULL) {
@@ -219,14 +148,11 @@ void SettingsStopsInit() {
     .unload = WindowUnload,
   });
 
-  ProgressWindowPush();
-
-  // Start process of getting the stops
-  StopsConstructor(&s_nearby_stops);
-  SendAppMessageInitiateGetNearbyStops(&s_nearby_stops);
+  window_set_user_data(s_window, appdata);
+  window_stack_push(s_window, true);
 }
 
-void SettingsStopsDeinit() {
+void ManageStopsDeinit() {
   window_destroy(s_window);
   s_window = NULL;
 }

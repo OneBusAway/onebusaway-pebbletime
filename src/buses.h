@@ -69,6 +69,7 @@ typedef struct {
 
 void ListBuses(const Buses* buses);
 void ListStops(const Stops* stops);
+void CreateStopsFromBuses(const Buses* buses, Stops* stops);
 void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses);
 void BusesDestructor(Buses* buses);
 bool AddBus(const Bus* bus, Buses* buses);

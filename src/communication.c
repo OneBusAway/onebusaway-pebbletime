@@ -1,6 +1,7 @@
 #include "communication.h"
 #include "arrivals.h"
 #include "settings_stops.h"
+#include "settings_routes.h"
 #include "main_window.h"
 #include "utility.h"
 #include "error_window.h"
