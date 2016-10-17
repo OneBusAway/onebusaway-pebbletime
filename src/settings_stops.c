@@ -41,7 +41,7 @@ static void DrawRowCallback(GContext *ctx,
                             void *context) {
   if(cell_index->row <= s_nearby_stops.total_size) {
     if(s_nearby_stops.total_size == 0) {
-      menu_cell_basic_draw(ctx, cell_layer, "Sorry!", "No stops nearby.", NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "Sorry", "No stops nearby", NULL);
     }
     else {
       int16_t index = cell_index->row - s_nearby_stops.index_offset;
@@ -49,7 +49,7 @@ static void DrawRowCallback(GContext *ctx,
         // TODO: arbitrary constant - consider removing
         char stopInfo[55];
         Stop* s = MemListGet(s_nearby_stops.memlist, 
-                            cell_index->row - s_nearby_stops.index_offset);
+                             cell_index->row - s_nearby_stops.index_offset);
         if(strlen(s->direction) > 0) {
           snprintf(stopInfo, 
                   sizeof(stopInfo),
@@ -144,11 +144,11 @@ void SettingsStopsUpdate(Stops *stops, Buses* buses) {
 
 #ifdef LOGGING_ENABLED
     Stop* stop = (Stop*)MemListGet(s_nearby_stops.memlist, 0);
-#endif
     APP_LOG(APP_LOG_LEVEL_DEBUG, 
             "SettingsStopsUpdate - stop0: %s, new_index_offset:%u", 
             stop->stop_name, 
             (uint)stop->index);
+#endif
 
     window_set_user_data(s_window, buses);
     

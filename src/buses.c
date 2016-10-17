@@ -61,7 +61,7 @@ void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses) {
       if(temp == NULL) {
         APP_LOG(APP_LOG_LEVEL_ERROR, "NULL FILTER POINTER");
         ErrorWindowPush(
-            "Critical error. Out of memory. 0x100022.", 
+            "Critical error\n\nOut of memory\n\n0x100022", 
             true);
       }
       if(buses->filter_index != NULL) {
@@ -206,7 +206,7 @@ void RemoveBus(uint32_t index, Buses *buses) {
   if(temp_buses == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL BUS POINTER");
     ErrorWindowPush(
-        "Critical error. Out of memory. 0x100024.", 
+        "Critical error\n\nOut of memory\n\n0x100024", 
         true);
   }
 
@@ -298,7 +298,7 @@ void AddStop(const uint16_t index,
 
   if(!success) {
     ErrorWindowPush(
-        "Critical error. Out of memory. 0x100028.", 
+        "Critical error\n\nOut of memory\n\n0x100028, 
         true);
   }
 }
@@ -316,7 +316,7 @@ void AddRoute(const char *route_id,
   if(temp_routes == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL ROUTES POINTER");
     ErrorWindowPush(
-        "Critical error. Out of memory. 0x100020.", 
+        "Critical error\n\nOut of memory\n\n0x100020", 
         true);
     return;
   }

@@ -15,9 +15,9 @@ var test_lat = test.lat;
 var test_lon = test.lon;
 
 var DIALOG_GPS_ERROR =
-    "Location Error.\n\nCheck phone GPS settings & signal.";
+    "Location Error\n\nCheck phone GPS settings & signal";
 var DIALOG_INTERNET_ERROR =
-    "Connection failure.\n\nCheck phone internet connection.";
+    "Connection failure\n\nCheck phone internet connection";
 var GPS_TIMEOUT = 15000;
 var GPS_MAX_AGE = 60000;
 var APP_MESSAGE_MAX_ATTEMPTS = 7;

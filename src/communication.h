@@ -5,8 +5,8 @@
 #include "buses.h"
 #include "appdata.h"
 
-#define DIALOG_MESSAGE_BLUETOOTH_ERROR "Bluetooth Disconnected.\n\nReconnect phone to continue."
-#define DIALOG_MESSAGE_GENERAL_ERROR "Something went wrong.\n\nWe're sorry. Please try again."
+#define DIALOG_MESSAGE_BLUETOOTH_ERROR "Bluetooth Disconnected\n\nReconnect phone to continue"
+#define DIALOG_MESSAGE_GENERAL_ERROR "Something went wrong\n\nSorry - Please try again"
 
 // AppMessage dictionary keys
 enum AppMessageKeys {

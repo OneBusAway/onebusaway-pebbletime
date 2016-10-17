@@ -50,8 +50,8 @@ static void DrawRowCallback(GContext *ctx,
     if(s_nearby_routes.count == 0) {
       menu_cell_basic_draw(ctx, 
                            cell_layer, 
-                           "Sorry!", 
-                           "No routes at this stop.",
+                           "Sorry", 
+                           "No routes at this stop",
                            NULL);
     }
     else {
@@ -106,7 +106,7 @@ static void SelectCallback(struct MenuLayer *menu_layer,
       s_nearby_routes.data[cell_index->row].favorite = result;
       if(!result) {
         ErrorWindowPush(
-            "Can't save favorite.\n\nMaximum number of favorite buses reached.", 
+            "Can't save favorite\n\nMaximum number of favorite buses reached", 
             false);
       }
     }
@@ -127,7 +127,7 @@ static void WindowLoad(Window *window) {
   if(s_menu_layer == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL MENU LAYER");
     ErrorWindowPush(
-      "Critical error. Out of memory. 0x100011.", 
+      "Critical error\n\nOut of memory\n\n0x100011", 
       true);
   }
 
@@ -164,7 +164,7 @@ void SettingsRoutesUpdate(Routes routes, Buses* buses) {
     if(s_window == NULL) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
       ErrorWindowPush(
-        "Critical error. Out of memory. 0x100011.", 
+        "Critical error\n\nOut of memory\n\n0x100011", 
         true);
       return;
     }

@@ -69,7 +69,7 @@ static void ActionMenuCallback(ActionMenu* action_menu,
     bool result = AddBus(&s_content.bus, &appdata->buses);
     if(!result) {
       ErrorWindowPush(
-          "Can't save favorite.\n\nMaximum number of favorite buses reached.", 
+          "Can't save favorite\n\nMaximum number of favorite buses reached", 
           false);
     }
     MainWindowMarkForRefresh(appdata);

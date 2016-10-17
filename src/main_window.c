@@ -269,7 +269,7 @@ static void DrawRowCallback(GContext *ctx,
         menu_cell_basic_draw(ctx,
                              cell_layer, 
                              "Loading...", 
-                             "Getting nearby buses.", 
+                             "Getting nearby buses", 
                              NULL);
       }
       // not currently loading buses
@@ -448,7 +448,7 @@ static void SelectCallback(
             SettingsStopsInit();
           }
           else {
-            ErrorWindowPush("App still loading.\n\nPlease wait before entering settings.", false);
+            ErrorWindowPush("App still loading\n\nPlease wait before entering settings", false);
           }
           break;
         case 1:
@@ -457,7 +457,7 @@ static void SelectCallback(
             // SettingsStopsInit();
           }
           else {
-            ErrorWindowPush("App still loading.\n\nPlease wait before entering settings.", false);
+            ErrorWindowPush("App still loading\n\nPlease wait before entering settings", false);
           }
           break;
         case 2:
@@ -466,7 +466,7 @@ static void SelectCallback(
             // SettingsStopsInit();
           }
           else {
-            ErrorWindowPush("App still loading.\n\nPlease wait before entering settings.", false);
+            ErrorWindowPush("App still loading\n\nPlease wait before entering settings", false);
           }
           break;
         default :
