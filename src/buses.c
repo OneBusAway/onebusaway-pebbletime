@@ -298,7 +298,7 @@ void AddStop(const uint16_t index,
 
   if(!success) {
     ErrorWindowPush(
-        "Critical error\n\nOut of memory\n\n0x100028, 
+        "Critical error\n\nOut of memory\n\n0x100028", 
         true);
   }
 }
