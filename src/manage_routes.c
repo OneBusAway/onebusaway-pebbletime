@@ -1,20 +1,23 @@
-#include "manage_stops.h"
 #include "manage_routes.h"
 #include "utility.h"
-#include "buses.h"
+#include "error_window.h"
+//#include "progress_window.h"
+//#include "communication.h"
 
 static Window *s_window;
 static MenuLayer *s_menu_layer;
-static Stops s_stops;
+static Stop s_stop;
+static Routes s_routes;
 
-static uint16_t GetNumSectionsCallback(MenuLayer *menu_layer, void *data) {
+static uint16_t MenuGetNumSectionsCallback(MenuLayer *menu_layer, 
+                                           void *data) {
   return 1;
 }
 
 static uint16_t GetNumRowsCallback(MenuLayer *menu_layer, 
                                    uint16_t section_index, 
                                    void *context) {
-  return (s_stops.total_size > 0) ? s_stops.total_size : 1;
+  return s_routes.count;
 }
 
 static int16_t GetHeaderHeightCallback(MenuLayer *menu_layer, 
@@ -27,40 +30,28 @@ static void DrawHeaderCallback(GContext* ctx,
                                const Layer *cell_layer, 
                                uint16_t section_index, 
                                void *data) {
-  MenuCellDrawHeader(ctx, cell_layer, "Favorite Stops");
+  MenuCellDrawHeader(ctx, cell_layer, "Favorites Routes");
 }
 
 static void DrawRowCallback(GContext *ctx, 
-                            const Layer *cell_layer,
-                            MenuIndex *cell_index,
+                            const Layer *cell_layer, 
+                            MenuIndex *cell_index, 
                             void *context) {
-  if(cell_index->row <= s_stops.total_size) {
-    if(s_stops.total_size == 0) {
-      menu_cell_basic_draw(ctx, cell_layer, "Sorry", "No favorite stops", NULL);
+  if(cell_index->row <= s_routes.count) {
+    if(s_routes.count == 0) {
+      menu_cell_basic_draw(ctx, 
+                           cell_layer, 
+                           "Sorry", 
+                           "No routes at this stop",
+                           NULL);
     }
     else {
-      int16_t index = cell_index->row;
-      if ((index >= 0) && (index < MemListCount(s_stops.memlist))) {
-        // TODO: arbitrary constant - consider removing
-        char stopInfo[55];
-        Stop* s = MemListGet(s_stops.memlist, index);
-        if(strlen(s->direction) > 0) {
-          snprintf(stopInfo, 
-                  sizeof(stopInfo),
-                  "(%s) %s",
-                  s->direction,
-                  s->stop_name);
-        }
-        else {
-          snprintf(stopInfo, sizeof(stopInfo), "%s", s->stop_name);
-        }
-        
-        MenuCellDraw(ctx, cell_layer, s->detail_string, stopInfo);
-      }
+      Route *r = &s_routes.data[cell_index->row];
+      MenuCellDraw(ctx, cell_layer, r->route_name, r->description);
     }
   }
   else {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Request for more stops than exist!");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Request for more routes than exist!");
   }
 }
 
@@ -75,37 +66,34 @@ static int16_t GetCellHeightCallback(struct MenuLayer *menu_layer,
 }
 
 static void SelectCallback(struct MenuLayer *menu_layer, 
-                           MenuIndex *cell_index, 
+                           MenuIndex *cell_index,
                            void *context) {
-  if(cell_index->row <= s_stops.total_size) {
-    if(s_stops.total_size != 0) {
-      Stop *stop = MemListGet(s_stops.memlist, 
-                              cell_index->row);
-      ManageRoutesInit(*stop, (AppData*)context);
-    }
-    else {
-      // nudge - no action to take
-      VibeMicroPulse();
-    }
+  if(cell_index->row <= s_routes.count) {
+    //TODO - is there a special case for 0 stops here? YES!
+    // Route *route = &s_routes.data[cell_index->row];
+    // menu_layer_reload_data(s_menu_layer);
+    VibeMicroPulse();
   }
   else {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "SelectCallback: too many stops");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "SelectCallback: too many routes");
   }
 }
 
-static void WindowLoad(Window* window) {
+static void WindowLoad(Window *window) {
+  Buses* buses = window_get_user_data(window);
+
+  RoutesConstructor(&s_routes);
+  CreateRoutesFromBuses(buses, &s_stop, &s_routes);
+
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-
-  AppData* appdata = window_get_user_data(window);
-
-  // build list of stops from all buses
-  StopsConstructor(&s_stops);
-  CreateStopsFromBuses(&appdata->buses, &s_stops);
 
   s_menu_layer = menu_layer_create(bounds);
   if(s_menu_layer == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL MENU LAYER");
+    ErrorWindowPush(
+      "Critical error\n\nOut of memory\n\n0x100011", 
+      true);
   }
 
 #if defined(PBL_COLOR)
@@ -113,8 +101,8 @@ static void WindowLoad(Window* window) {
   menu_layer_set_highlight_colors(s_menu_layer, GColorBlue, GColorWhite);
 #endif
 
-  menu_layer_set_callbacks(s_menu_layer, appdata, (MenuLayerCallbacks) {
-    .get_num_sections = GetNumSectionsCallback,
+  menu_layer_set_callbacks(s_menu_layer, buses, (MenuLayerCallbacks) {
+    .get_num_sections = MenuGetNumSectionsCallback,
     .get_num_rows = GetNumRowsCallback,
     .get_header_height = GetHeaderHeightCallback,
     .draw_header = DrawHeaderCallback,
@@ -123,35 +111,38 @@ static void WindowLoad(Window* window) {
     .select_click = SelectCallback
   });
 
-  // Bind the menu layer's click config provider to the window for interactivity
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
-
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
 }
 
 static void WindowUnload(Window *window) {
-  StopsDestructor(&s_stops);
   menu_layer_destroy(s_menu_layer);
+  RoutesDestructor(&s_routes);
 }
 
-void ManageStopsInit(AppData* appdata) {
+void ManageRoutesInit(Stop stop, AppData* appdata) {
+  s_stop = stop;
   s_menu_layer = NULL;
+  
   s_window = window_create();
+
   if(s_window == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
+    ErrorWindowPush(
+      "Critical error\n\nOut of memory\n\n0x100011", 
+      true);
     return;
   }
-
+  
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = WindowLoad,
     .unload = WindowUnload,
   });
 
-  window_set_user_data(s_window, appdata);
+  window_set_user_data(s_window, &appdata->buses);
   window_stack_push(s_window, true);
 }
 
-void ManageStopsDeinit() {
+void ManageRoutesDeinit() {
   window_destroy(s_window);
-  s_window = NULL;
 }

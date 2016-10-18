@@ -524,6 +524,7 @@ static void HandleAppMessageNearbyRoutes(
         AddRoute(route_id_tuple->value->cstring, 
                  route_name_tuple->value->cstring, 
                  description_tuple->value->cstring,
+                 false,
                  &s_nearby_routes);
       }
     }

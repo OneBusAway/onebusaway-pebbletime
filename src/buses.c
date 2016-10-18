@@ -44,21 +44,60 @@ void ListStops(const Stops* stops) {
 void CreateStopsFromBuses(const Buses* buses, Stops* stops) {
   bool success = true;
 
-  // TODO - DEDUPE STOPS AS THEY'RE ADDED
   for(uint32_t i = 0; i < buses->count; i++)  {
     Bus b = buses->data[i];
-    Stop s = StopConstructor(0 /*index*/,
-                             b.stop_id,
-                             b.stop_name,
-                             b.route_name /*should append to this*/,
-                             b.lat,
-                             b.lon,
-                             b.direction);
-    success &= MemListAppend(stops->memlist, &s);
+
+    int16_t match_index = -1;
+    // look for this stop in the list
+    const int16_t max_stops = MemListCount(stops->memlist);
+    for(int16_t stop_index = 0; stop_index < max_stops; stop_index++) {
+      Stop* compare = MemListGet(stops->memlist, stop_index);
+      if(strcmp(compare->stop_id, b.stop_id) == 0) {
+        match_index = stop_index;
+        break;
+      }
+    }
+
+    if(match_index == -1) {  
+      Stop s = StopConstructor(0 /*index*/,
+                              b.stop_id,
+                              b.stop_name,
+                              b.route_name,
+                              b.lat,
+                              b.lon,
+                              b.direction);
+      success &= MemListAppend(stops->memlist, &s);
+    }
+    else {
+      Stop* s = MemListGet(stops->memlist, match_index);
+      uint16_t length = strlen(b.route_name) + strlen(s->detail_string) + 2;
+      char* routes = malloc(length);
+      success &= (routes != NULL);
+      snprintf(routes, length, "%s,%s", s->detail_string, b.route_name);
+      free(s->detail_string);
+      s->detail_string = routes;
+    }
+
     stops->total_size += 1;
   }
+
   if(!success) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed adding stops");  
+  }
+}
+
+void CreateRoutesFromBuses(const Buses* buses, const Stop* stop, Routes* routes) {
+  // look for routes matching this stop
+  for(uint32_t i = 0; i < buses->count; i++)  {
+    Bus b = buses->data[i];
+
+    if(strcmp(stop->stop_id, b.stop_id) == 0) {
+      AddRoute(b.route_id,
+               b.route_name,
+               b.description,
+               true /*favorite*/,
+               routes);
+    }
   }
 }
 
@@ -325,14 +364,15 @@ void AddStop(const uint16_t index,
 }
 
 void AddRoute(const char *route_id,
-              const char *routeName,
+              const char *route_name,
               const char *description,
+              const bool favorite,
               Routes* routes) {
 
   APP_LOG(APP_LOG_LEVEL_INFO,
           "Creating route - route:%s, name:%s",
           route_id,
-          routeName);
+          route_name);
   Route* temp_routes = (Route*)malloc(sizeof(Route)*((routes->count)+1));
   if(temp_routes == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL ROUTES POINTER");
@@ -347,9 +387,9 @@ void AddRoute(const char *route_id,
   }
   routes->data = temp_routes;
   Route temp_route = RouteConstructor(route_id,
-                                      routeName,
+                                      route_name,
                                       description,
-                                      false);
+                                      favorite);
   routes->data[routes->count] = temp_route;
   routes->count+=1;
 }

@@ -70,6 +70,7 @@ typedef struct {
 void ListBuses(const Buses* buses);
 void ListStops(const Stops* stops);
 void CreateStopsFromBuses(const Buses* buses, Stops* stops);
+void CreateRoutesFromBuses(const Buses* buses, const Stop* stop, Routes* routes);
 void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses);
 void BusesDestructor(Buses* buses);
 bool AddBus(const Bus* bus, Buses* buses);
@@ -89,6 +90,7 @@ void AddStop(const uint16_t index,
 void AddRoute(const char *route_id,
               const char *routeName,
               const char *description,
+              const bool favorite,
               Routes* routes);
 Stop StopConstructor(const uint16_t index,
                      const char* stop_id,
