@@ -8,6 +8,5 @@
 
 void SettingsRoutesUpdate(Routes, Buses*);
 void SettingsRoutesInit(Stop, Buses*);
-void SettingsRoutesDeinit();
 
 #endif /* end of include guard: SETTINGS_ROUTES_H */

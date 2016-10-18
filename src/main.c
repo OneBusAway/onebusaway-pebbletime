@@ -51,7 +51,6 @@ static void HandleDeinit(AppData* appdata) {
   ArrivalsDestructor(appdata->next_arrivals);
   FreeAndClearPointer((void**)&appdata->next_arrivals);
   CommunicationDeinit();
-  MainWindowDeinit();
   ErrorWindowDeinit();
 }
 

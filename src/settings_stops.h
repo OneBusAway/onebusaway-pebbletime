@@ -5,6 +5,5 @@
 
 void SettingsStopsUpdate(Stops* stops, Buses* buses);
 void SettingsStopsInit();
-void SettingsStopsDeinit();
 
 #endif /* end of include guard: SETTINGS_STOPS_H */

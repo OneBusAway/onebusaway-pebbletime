@@ -118,6 +118,8 @@ static void WindowLoad(Window *window) {
 static void WindowUnload(Window *window) {
   menu_layer_destroy(s_menu_layer);
   RoutesDestructor(&s_routes);
+  window_destroy(s_window);
+  s_window = NULL;
 }
 
 void ManageRoutesInit(Stop stop, AppData* appdata) {
@@ -143,6 +145,3 @@ void ManageRoutesInit(Stop stop, AppData* appdata) {
   window_stack_push(s_window, true);
 }
 
-void ManageRoutesDeinit() {
-  window_destroy(s_window);
-}

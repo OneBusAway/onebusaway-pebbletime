@@ -139,8 +139,9 @@ static void WindowLoad(Window* window) {
 
 static void WindowUnload(Window *window) {
   StopsDestructor(&s_nearby_stops);
-  SettingsRoutesDeinit();
   menu_layer_destroy(s_menu_layer);
+  window_destroy(s_window);
+  s_window = NULL;
 }
 
 void SettingsStopsUpdate(Stops *stops, Buses* buses) {
@@ -223,9 +224,4 @@ void SettingsStopsInit() {
   // Start process of getting the stops
   StopsConstructor(&s_nearby_stops);
   SendAppMessageInitiateGetNearbyStops(&s_nearby_stops);
-}
-
-void SettingsStopsDeinit() {
-  window_destroy(s_window);
-  s_window = NULL;
 }

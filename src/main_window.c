@@ -519,12 +519,13 @@ static void WindowLoad(Window *window) {
 
 static void WindowUnload(Window *window) {
   menu_layer_destroy(s_menu_layer);
+  FreeAndClearPointer((void**)&s_last_selected_trip_id);
+  window_destroy(s_main_window);
+  s_main_window = NULL;
 }
 
 static void WindowAppear(Window *window) {
   AppData* appdata = window_get_user_data(window);
-
-  SettingsStopsDeinit();
 
   if(appdata->refresh_arrivals) {
     // returning from settings where settings have changed, update
@@ -568,10 +569,6 @@ static void WindowAppear(Window *window) {
   StartArrivalsUpdateTimer(appdata);
 }
 
-static void WindowDisappear(Window *window) {
-
-}
-
 void MainWindowInit(AppData* appdata) {
   s_main_window = window_create();
 
@@ -595,13 +592,7 @@ void MainWindowInit(AppData* appdata) {
   window_set_window_handlers(s_main_window, (WindowHandlers) {
       .load = WindowLoad,
       .unload = WindowUnload,
-      .appear = WindowAppear,
-      .disappear = WindowDisappear,
+      .appear = WindowAppear
   });
   window_stack_push(s_main_window, true);
-}
-
-void MainWindowDeinit() {
-  FreeAndClearPointer((void**)&s_last_selected_trip_id);
-  window_destroy(s_main_window);
 }

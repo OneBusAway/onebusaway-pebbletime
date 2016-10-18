@@ -67,6 +67,7 @@ void CreateStopsFromBuses(const Buses* buses, Stops* stops) {
                               b.lon,
                               b.direction);
       success &= MemListAppend(stops->memlist, &s);
+      stops->total_size += 1;
     }
     else {
       Stop* s = MemListGet(stops->memlist, match_index);
@@ -77,8 +78,6 @@ void CreateStopsFromBuses(const Buses* buses, Stops* stops) {
       free(s->detail_string);
       s->detail_string = routes;
     }
-
-    stops->total_size += 1;
   }
 
   if(!success) {

@@ -152,6 +152,8 @@ static void WindowLoad(Window *window) {
 
 static void WindowUnload(Window *window) {
   menu_layer_destroy(s_menu_layer);
+  window_destroy(s_window);
+  s_window = NULL;
 }
 
 void SettingsRoutesUpdate(Routes routes, Buses* buses) {
@@ -193,8 +195,4 @@ void SettingsRoutesInit(Stop stop, Buses* buses) {
   
   ProgressWindowPush();
   SendAppMessageGetRoutesForStop(&s_stop);
-}
-
-void SettingsRoutesDeinit() {
-  window_destroy(s_window);
 }

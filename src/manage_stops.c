@@ -132,6 +132,8 @@ static void WindowLoad(Window* window) {
 static void WindowUnload(Window *window) {
   StopsDestructor(&s_stops);
   menu_layer_destroy(s_menu_layer);
+  window_destroy(s_window);
+  s_window = NULL;
 }
 
 void ManageStopsInit(AppData* appdata) {
@@ -152,6 +154,5 @@ void ManageStopsInit(AppData* appdata) {
 }
 
 void ManageStopsDeinit() {
-  window_destroy(s_window);
-  s_window = NULL;
+
 }

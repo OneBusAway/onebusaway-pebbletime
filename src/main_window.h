@@ -9,7 +9,6 @@
 #define MENU_CELL_HEIGHT_BUS 60
 
 void MainWindowInit(AppData* appdata);
-void MainWindowDeinit();
 void MainWindowUpdateArrivals(AppData* appdata);
 void MainWindowMarkForRefresh(AppData* appdata);
 
