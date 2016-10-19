@@ -91,8 +91,11 @@ static int16_t GetCellHeightCallback(struct MenuLayer *menu_layer,
 static void SelectCallback(struct MenuLayer *menu_layer, 
                            MenuIndex *cell_index,
                            void *context) {
-  if(cell_index->row <= s_nearby_routes.count) {
-    //TODO - is there a special case for 0 stops here? YES!
+  if(s_nearby_routes.count == 0) {
+    // Do nothing
+    VibeMicroPulse();
+  }
+  else if(cell_index->row <= s_nearby_routes.count) {
     Route *route = &s_nearby_routes.data[cell_index->row];
     int32_t bus_index = GetBusIndex(s_stop.stop_id, 
                                     route->route_id, 

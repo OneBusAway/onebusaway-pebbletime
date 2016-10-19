@@ -93,15 +93,25 @@ static void SelectCallback(struct MenuLayer *menu_layer,
   }
 }
 
+static void WindowAppear(Window* window) {
+  AppData* appdata = window_get_user_data(window);
+
+  StopsDestructor(&s_stops);
+  StopsConstructor(&s_stops);
+  CreateStopsFromBuses(&appdata->buses, &s_stops);
+
+  // refresh the menu
+  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+  menu_layer_reload_data(s_menu_layer);    
+}
+
 static void WindowLoad(Window* window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
   AppData* appdata = window_get_user_data(window);
 
-  // build list of stops from all buses
   StopsConstructor(&s_stops);
-  CreateStopsFromBuses(&appdata->buses, &s_stops);
 
   s_menu_layer = menu_layer_create(bounds);
   if(s_menu_layer == NULL) {
@@ -147,12 +157,9 @@ void ManageStopsInit(AppData* appdata) {
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = WindowLoad,
     .unload = WindowUnload,
+    .appear = WindowAppear
   });
 
   window_set_user_data(s_window, appdata);
   window_stack_push(s_window, true);
-}
-
-void ManageStopsDeinit() {
-
 }

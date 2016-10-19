@@ -55,7 +55,6 @@ static void ActionMenuCallback(ActionMenu* action_menu,
   AppData* appdata = (AppData*)context;
 
   int item = (int)action_menu_item_get_action_data(action);
-  APP_LOG(APP_LOG_LEVEL_INFO, "button click %i", item); 
 
   if(item == 0) {
     int32_t bus_index = GetBusIndex(s_content.bus.stop_id, 
@@ -79,8 +78,7 @@ static void ActionMenuCallback(ActionMenu* action_menu,
     MainWindowMarkForRefresh(appdata);
     // kick off request for routes for the stops
     
-    // TOOD: memory leak - should have SendAppMessageGetRoutesForStop clean
-    // up the stop when it is done
+    // TOOD: memory leak - use action menu .did_close to cleanup? 
     Stop stop = StopConstructor(0,
                                 s_content.bus.stop_id, 
                                 s_content.bus.stop_name, 
@@ -534,6 +532,7 @@ void BusDetailsWindowPush(
     const Arrival* arrival,
     AppData* appdata) {
 
+    s_action_menu_root = NULL;
     s_content.bus = bus;
     s_content.arrival = ArrivalCopy(arrival);
 
