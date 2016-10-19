@@ -3,7 +3,7 @@
 #include "bus_details.h"
 #include "communication.h"
 #include "utility.h"
-#include "settings_stops.h"
+#include "add_stops.h"
 #include "error_window.h"
 #include "manage_stops.h"
 

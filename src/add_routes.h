@@ -1,5 +1,5 @@
-#ifndef SETTINGS_ROUTES_H
-#define SETTINGS_ROUTES_H
+#ifndef ADD_ROUTES_H
+#define ADD_ROUTES_H
 
 #include <pebble.h>
 #include "buses.h"
@@ -9,4 +9,4 @@
 void SettingsRoutesUpdate(Routes, Buses*);
 void SettingsRoutesInit(Stop, Buses*);
 
-#endif /* end of include guard: SETTINGS_ROUTES_H */
+#endif /* end of include guard: ADD_ROUTES_H */

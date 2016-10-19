@@ -8,4 +8,4 @@
 void ManageStopsInit(AppData* appdata);
 void ManageStopsDeinit();
 
-#endif /* end of include guard: SETTINGS_STOPS_H */
+#endif /* end of include guard: ADD_STOPS_H */

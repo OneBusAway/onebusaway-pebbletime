@@ -2,7 +2,7 @@
 #include <pebble-math-sll/math-sll.h>
 #include "arrivals.h"
 #include "bus_details.h"
-#include "settings_routes.h"
+#include "add_routes.h"
 #include "main_window.h"
 #include "error_window.h"
 #include "progress_window.h"

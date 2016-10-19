@@ -1,6 +1,6 @@
 #include <pebble.h>
-#include "settings_stops.h"
-#include "settings_routes.h"
+#include "add_stops.h"
+#include "add_routes.h"
 #include "utility.h"
 #include "progress_window.h"
 #include "communication.h"
