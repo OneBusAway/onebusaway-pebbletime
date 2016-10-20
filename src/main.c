@@ -17,9 +17,7 @@ static void BluetoothCallback(bool connected) {
 }
 
 static void HandleInit(AppData* appdata) {
-  // Upgrade persistence (as needed)
-  PersistenceVersionControl();
-
+  PersistenceInit();
   ErrorWindowInit();
 
   // Initialize app data

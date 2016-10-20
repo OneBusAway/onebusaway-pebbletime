@@ -111,10 +111,9 @@ void FilterBusesByLocation(const sll lat, const sll lon, Buses* buses) {
 
     //TODO / IDEA: make this return at least one stop,
     //  or search outward from the radius to find some...
-    //TODO: make DEFINE or var set in settings, coordinate with JS OBA calls
-    //  w/ radius set. One pattern could be that this distance is 2x, 4x the
-    //  stop search dist?
-    if(d < dbl2sll(1.000)) {
+    uint32_t radius = PersistReadArrivalRadius();
+    sll sll_radius = slldiv(int2sll(radius), int2sll(1000));
+    if(d <= sll_radius) {
       uint32_t* temp = (uint32_t*)malloc(sizeof(uint32_t) *
                                          (buses->filter_count+1));
       if(temp == NULL) {

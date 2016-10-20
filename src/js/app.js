@@ -698,7 +698,7 @@ function sendStopsToPebbleJson(json, transactionId, index, index_end) {
  * requests the bus stops near the current GPS coordinates and sends the
  * stops and routes to the watch
  */
-function getNearbyStopsLocationSuccess(pos, transactionId, index, index_end) {
+function getNearbyStopsLocationSuccess(pos, transactionId, index, index_end, radius) {
   var lat = pos.coords.latitude;
   var lon = pos.coords.longitude;
 
@@ -710,7 +710,7 @@ function getNearbyStopsLocationSuccess(pos, transactionId, index, index_end) {
 
   // TODO: Make the search radius configurable; experiemented with 200-1000
   var url = OBA_SERVER + '/api/where/stops-for-location.json?key=' +
-    OBA_API_KEY + '&lat=' + lat + '&lon=' + lon + '&radius=250';
+    OBA_API_KEY + '&lat=' + lat + '&lon=' + lon + '&radius=' + radius;
 
   // Send request to OneBusAway
   xhrRequest(url, 'GET',
@@ -783,10 +783,10 @@ function getLocation() {
  * gets the nearby OBA stops based on the current location and sends the
  * results to the watch
  */
-function getNearbyStops(transactionId, index, index_end) {
+function getNearbyStops(transactionId, index, index_end, radius) {
   navigator.geolocation.getCurrentPosition(
       function(pos) {
-        getNearbyStopsLocationSuccess(pos, transactionId, index, index_end);
+        getNearbyStopsLocationSuccess(pos, transactionId, index, index_end, radius);
       },
       function(e) {
         console.log("Error requesting location!");
@@ -831,10 +831,11 @@ Pebble.addEventListener('appmessage',
         var transactionId = e.payload.AppMessage_transactionId;
         var index = e.payload.AppMessage_index;
         var index_end = e.payload.AppMessage_count + index - 1;
+        var radius = e.payload.AppMessage_radius;
         if(currentTransaction != transactionId) {
           stopsJsonCache = {};
           currentTransaction = transactionId;        
-          getNearbyStops(transactionId, index, index_end);
+          getNearbyStops(transactionId, index, index_end, radius);
         }
         else {
           sendStopsToPebbleJson(stopsJsonCache, transactionId, index, index_end)

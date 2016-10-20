@@ -6,6 +6,7 @@
 #include "add_stops.h"
 #include "error_window.h"
 #include "manage_stops.h"
+#include "radius_window.h"
 
 static Window *s_main_window;
 static MenuLayer *s_menu_layer;
@@ -359,13 +360,13 @@ static void DrawRowCallback(GContext *ctx,
     case 1:
       switch (cell_index->row) {
         case 0:
-          menu_cell_basic_draw(ctx, cell_layer, "Add Favorites", NULL, NULL);
+          menu_cell_basic_draw(ctx, cell_layer, "Add favorites", NULL, NULL);
           break;
         case 1:
-          menu_cell_basic_draw(ctx, cell_layer, "Manage Favorites", NULL, NULL);
+          menu_cell_basic_draw(ctx, cell_layer, "Manage favorites", NULL, NULL);
           break;
         case 2:
-          menu_cell_basic_draw(ctx, cell_layer, "Search Radius", NULL, NULL);
+          menu_cell_basic_draw(ctx, cell_layer, "Search radius", NULL, NULL);
           break;
         default :
           APP_LOG(APP_LOG_LEVEL_ERROR, "Unknown Settings Menu Option");
@@ -460,7 +461,7 @@ static void SelectCallback(
         case 2:
           // Search Radius
           if(appdata->initialized) {
-            // SettingsStopsInit();
+            RadiusWindowInit();
           }
           else {
             ErrorWindowPush("App still loading\n\nPlease wait before entering settings", false);

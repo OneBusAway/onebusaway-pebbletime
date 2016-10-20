@@ -1,8 +1,18 @@
 #include "persistence.h"
 #include "utility.h"
-// write out the persistence version to enable later version control
-void PersistenceVersionControl() {
+
+
+void PersistenceInit() {
+  // write out the persistence version to enable later version control
   persist_write_int(PERSIST_KEY_VERSION, PERSISTENCE_VERSION);
+
+  // initialize storage constants
+  if(!persist_exists(PERSIST_KEY_ARRIVAL_RADIUS)) {
+    PersistWriteArrivalRadius(DEFAULT_ARRIVAL_RADIUS);
+  }
+  if(!persist_exists(PERSIST_KEY_SEARCH_RADIUS)) {
+    PersistWriteSearchRadius(DEFAULT_SEARCH_RADIUS);
+  }
 }
 
 #ifndef LOGGING_ENABLED
@@ -46,7 +56,16 @@ static bool RetryPersist(status_t result) {
   }
 }
 
-int PersistAllocateAndReadString(uint32_t key, char** dest) {
+// Write a string to persistence, return success or failure
+static bool PersistWriteString(const uint32_t key, const char* string) {
+  return (0 < persist_write_string(key, string));
+}
+
+static bool PersistWriteInt(const uint32_t key, const int32_t number) {
+  return (0 < persist_write_int(key, number));
+}
+
+static int PersistAllocateAndReadString(uint32_t key, char** dest) {
   char* buffer = (char*)malloc(PERSIST_STRING_MAX_LENGTH);
   if(buffer == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL STRING POINTER");
@@ -136,7 +155,7 @@ void LoadBusesFromPersistence(Buses* buses) {
 // }
 
 // Delete persistent data for a given index
-void DeletePersistence(const uint i){
+static void DeletePersistence(const uint i){
   persist_delete(PERSIST_KEY_BUSES+i);
   persist_delete(PERSIST_KEY_ROUTE_ID+i);
   persist_delete(PERSIST_KEY_STOP_ID+i);
@@ -144,11 +163,6 @@ void DeletePersistence(const uint i){
   persist_delete(PERSIST_KEY_STOP_NAME+i);
   persist_delete(PERSIST_KEY_DIRECTION+i);
   persist_delete(PERSIST_KEY_DESCRIPTION+i);
-}
-
-// Write a string to persistence, return success or failure
-bool PersistWriteString(const uint32_t key, const char* string) {
-  return (0 < persist_write_string(key, string));
 }
 
 // Save a single bus to persistence storage at the index passed into the
@@ -225,4 +239,20 @@ void DeleteBusFromPersistence(const Buses* buses, uint32_t index) {
             "Cannot delete bus index %u", 
             (uint)index);
   }
+}
+
+uint PersistReadArrivalRadius() { 
+  return persist_read_int(PERSIST_KEY_ARRIVAL_RADIUS); 
+}
+
+bool PersistWriteArrivalRadius(const uint32_t radius) {
+  return PersistWriteInt(PERSIST_KEY_ARRIVAL_RADIUS, radius);
+}
+
+uint PersistReadSearchRadius() { 
+  return persist_read_int(PERSIST_KEY_SEARCH_RADIUS); 
+}
+
+bool PersistWriteSearchRadius(const uint32_t radius) {
+  return PersistWriteInt(PERSIST_KEY_SEARCH_RADIUS, radius);
 }

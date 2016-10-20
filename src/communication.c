@@ -5,6 +5,7 @@
 #include "main_window.h"
 #include "utility.h"
 #include "error_window.h"
+#include "persistence.h"
 
 static AppTimer *s_timer;
 static Stops *s_nearby_stops;
@@ -183,6 +184,7 @@ void SendAppMessageGetNearbyStops(uint16_t index, uint16_t count) {
   dict_write_uint32(iterator, kAppMessageTransactionId, s_transaction_id);
   dict_write_uint16(iterator, kAppMessageIndex, index);
   dict_write_uint16(iterator, kAppMessageCount, count);
+  dict_write_uint32(iterator, kAppMessageRadius, PersistReadSearchRadius());
   
   // Send data
   app_message_outbox_send();
