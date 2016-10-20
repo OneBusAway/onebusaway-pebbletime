@@ -1,5 +1,5 @@
 #include "manage_stops.h"
-#include "manage_routes.h"
+#include "add_routes.h"
 #include "utility.h"
 #include "buses.h"
 
@@ -81,7 +81,8 @@ static void SelectCallback(struct MenuLayer *menu_layer,
     if(s_stops.total_size != 0) {
       Stop *stop = MemListGet(s_stops.memlist, 
                               cell_index->row);
-      ManageRoutesInit(*stop, (AppData*)context);
+      AppData* appdata = (AppData*)context;
+      SettingsRoutesInit(*stop, &appdata->buses);
     }
     else {
       // nudge - no action to take
