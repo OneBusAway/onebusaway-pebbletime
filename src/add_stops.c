@@ -145,17 +145,10 @@ static void WindowUnload(Window *window) {
 }
 
 void SettingsStopsUpdate(Stops *stops, Buses* buses) {
+  // TODO: "stops" is unused, since s_nearby_stops pointer
+  // got passed out and manipulated externally - buses
+  // isn't even really needed either (could be passed in elsewhere)
   if(s_window) {
-    // s_nearby_stops = stops;
-
-#ifdef LOGGING_ENABLED
-    Stop* stop = (Stop*)MemListGet(s_nearby_stops.memlist, 0);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, 
-            "SettingsStopsUpdate - stop0: %s, new_index_offset:%u", 
-            stop->stop_name, 
-            (uint)stop->index);
-#endif
-
     window_set_user_data(s_window, buses);
     
     if(!window_stack_contains_window(s_window)) {
@@ -184,7 +177,12 @@ static void SelectionChanged(struct MenuLayer *menu_layer,
     if(new_index.row + 4 >= buffer_end_index) {
       // close to the end of the current buffer
       if(buffer_end_index < s_nearby_stops.total_size - 1) {
-        SendAppMessageGetNearbyStops(buffer_end_index+1, 5);
+        uint16_t index = buffer_end_index+1;
+        APP_LOG(APP_LOG_LEVEL_DEBUG, 
+                "down: offset:%u index: %u", 
+                (uint)offset, 
+                (uint)index);
+        SendAppMessageGetNearbyStops(index, 5);
       }
     }
   }
@@ -201,8 +199,6 @@ static void SelectionChanged(struct MenuLayer *menu_layer,
       }
     }
   }
-  
-  ListStops(&s_nearby_stops);
 }
 
 

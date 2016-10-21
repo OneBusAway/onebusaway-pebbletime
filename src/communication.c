@@ -430,27 +430,33 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
       // but then cancels out... don't want the settings showing up after
       // they've been canceled
       
-      double lat, lon;
-      memcpy(&lat, lat_tuple->value->data, sizeof(double));
-      memcpy(&lon, lon_tuple->value->data, sizeof(double));
-      sll sll_lat = dbl2sll(lat);
-      sll sll_lon = dbl2sll(lon);
-      
       s_nearby_stops->total_size = count_tuple->value->uint16;
-      
-      AddStop(index_tuple->value->uint16,
-              stop_id_tuple->value->cstring,
-              stop_name_tuple->value->cstring, 
-              route_list_string_tuple->value->cstring,
-              sll_lat, 
-              sll_lon, 
-              direction_tuple->value->cstring, 
-              s_nearby_stops);
 
-      APP_LOG(APP_LOG_LEVEL_INFO, "Items remaining: %u",
-          (uint)items_remaining_tuple->value->uint16);
-      if(items_remaining_tuple->value->uint16 == 0) {
+      if(count_tuple->value->uint16 == 0) {
+        // special case: no stops returned
         SettingsStopsUpdate(s_nearby_stops, &appdata->buses);
+      }
+      else {
+        double lat, lon;
+        memcpy(&lat, lat_tuple->value->data, sizeof(double));
+        memcpy(&lon, lon_tuple->value->data, sizeof(double));
+        sll sll_lat = dbl2sll(lat);
+        sll sll_lon = dbl2sll(lon);
+                
+        AddStop(index_tuple->value->uint16,
+                stop_id_tuple->value->cstring,
+                stop_name_tuple->value->cstring, 
+                route_list_string_tuple->value->cstring,
+                sll_lat, 
+                sll_lon, 
+                direction_tuple->value->cstring, 
+                s_nearby_stops);
+
+        APP_LOG(APP_LOG_LEVEL_INFO, "Items remaining: %u",
+            (uint)items_remaining_tuple->value->uint16);
+        if(items_remaining_tuple->value->uint16 == 0) {
+          SettingsStopsUpdate(s_nearby_stops, &appdata->buses);
+        }
       }
     }
     else {

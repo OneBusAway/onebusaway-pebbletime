@@ -412,9 +412,9 @@ function parseBusList(busList) {
 }
 
 /**
- * send a message signifying the end of get routes or get stops transaction
+ * send a message signifying the end of get routes transaction
  */
-function sendEndOfStopsRoutes(transactionId, messageType) {
+function sendEndOfRoutes(transactionId, messageType) {
   var dictionary = {
     'AppMessage_routeId': 0,
     'AppMessage_routeName': '',
@@ -426,7 +426,34 @@ function sendEndOfStopsRoutes(transactionId, messageType) {
 
   sendAppMessage(dictionary,
     function() {
-      console.log('sendEndOfStopsRoutes: transactionId ' + transactionId);
+      console.log('sendEndOfRoutes: transactionId ' + transactionId);
+    }
+  );
+}
+
+/**
+ * send a message signifying the end of get stops transaction
+ */
+function sendEndOfStops(transactionId) {
+  // data to send back to watch
+  var dictionary = {
+    'AppMessage_stopId': 0,
+    'AppMessage_stopName': "",
+    'AppMessage_lat': 0,
+    'AppMessage_lon': 0,
+    'AppMessage_itemsRemaining': 0,
+    'AppMessage_routeListString': "",
+    'AppMessage_direction': "",
+    'AppMessage_transactionId': transactionId,
+    'AppMessage_messageType': 1, // nearby stops
+    'AppMessage_index': 0,
+    'AppMessage_count': 0
+  };
+
+  // Send to Pebble
+  sendAppMessage(dictionary,
+    function() {
+      console.log('sendEndOfStops: transactionId ' + transactionId);
     }
   );
 }
@@ -441,7 +468,7 @@ function sendRoutesToPebble(routes, transactionId, messageType) {
     // completed sending routes to the pebble, or the transaction
     // was canceled
     // console.log("sendRoutesToPebble We're done here...");
-    sendEndOfStopsRoutes(transactionId, messageType);
+    sendEndOfRoutes(transactionId, messageType);
     return;
   }
 
@@ -476,7 +503,7 @@ function sendRoutesToPebble(routes, transactionId, messageType) {
   else {
     console.log('sendRoutesToPebble: missing route id in JSON. transactionId: ' +
                 transactionId);
-    sendEndOfStopsRoutes(transactionId, messageType);
+    sendEndOfRoutes(transactionId, messageType);
   }
 }
 
@@ -489,10 +516,16 @@ function sendStopsToPebble(stops,
                            index,
                            index_end) {
 
+  if(stops.length == 0) {
+    // special case for no stops to send
+    sendEndOfStops(transactionId);
+    return;
+  }
+
   if((stops.length <= index) || 
      (index > index_end) || 
      (transactionId != currentTransaction)) {
-    // completed sending stops to the pebble; now send corresponding routes.
+    // completed sending stops to the pebble
     console.log("sendStopsToPebble: done.");
     return;
   }
