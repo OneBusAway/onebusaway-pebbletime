@@ -76,7 +76,7 @@ static void ClickConfigHandler(Window *window) {
 void ProgressWindowPush() {
   if(!s_window) {
     s_window = window_create();
-    window_set_background_color(s_window, PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite));
+    window_set_background_color(s_window, GColorLightGray);
     window_set_window_handlers(s_window, (WindowHandlers) {
       .load = WindowLoad,
       .appear = WindowAppear,
