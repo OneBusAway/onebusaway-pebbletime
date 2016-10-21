@@ -66,6 +66,9 @@ static void DrawRowCallback(GContext *ctx,
         
         MenuCellDraw(ctx, cell_layer, s->detail_string, stopInfo);
       }
+      else {
+        MenuCellDraw(ctx, cell_layer, "Working...", "...");
+      }
     }
   }
   else {
