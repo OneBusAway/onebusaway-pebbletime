@@ -368,8 +368,8 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
         if(s_outstanding_requests > 0) {
           s_outstanding_requests -= 1;
         }
-        // APP_LOG(APP_LOG_LEVEL_INFO, "Requests outstanding: %u",
-        //   (uint)s_outstanding_requests);
+        APP_LOG(APP_LOG_LEVEL_INFO, "Requests outstanding: %u",
+          (uint)s_outstanding_requests);
       }
       else {
         // add the arrival if completion is not signaled
@@ -383,6 +383,8 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
                    *(arrivalCode_tuple->value->cstring),
                    &appdata->buses,
                    appdata->next_arrivals);
+        // APP_LOG(APP_LOG_LEVEL_INFO, "Items remaining: %u",
+        //   (uint)items_remaining_tuple->value->uint32);
       }
 
       if(s_outstanding_requests == 0) {
@@ -445,6 +447,8 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
               direction_tuple->value->cstring, 
               s_nearby_stops);
 
+      APP_LOG(APP_LOG_LEVEL_INFO, "Items remaining: %u",
+          (uint)items_remaining_tuple->value->uint16);
       if(items_remaining_tuple->value->uint16 == 0) {
         SettingsStopsUpdate(s_nearby_stops, &appdata->buses);
       }

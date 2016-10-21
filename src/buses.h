@@ -5,12 +5,6 @@
 #include <pebble-math-sll/math-sll.h>
 #include "memlist.h"
 
-// #define ID_LENGTH 20
-// #define DIRECTION_LENGTH 5
-// #define ROUTE_SHORT_LENGTH 10
-// #define STOP_LENGTH 50
-// #define DESCRIPTION_LENGTH 50
-
 // WARNING:
 // CHANGING THIS STRUCT WILL CAUSE A PERSISTENT STORAGE VERSION CHANGE
 // MODIFY WITH CARE

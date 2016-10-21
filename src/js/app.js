@@ -687,7 +687,8 @@ function sendStopsToPebbleJson(json, transactionId, index, index_end) {
     stops = json.data.stops;
   }
 
-  if(stops.length < index_end) {
+  // set the end index to match the size of the stops array
+  if(stops.length <= index_end) {
     index_end = stops.length - 1;
   }
 
