@@ -212,6 +212,13 @@ function millisToMinutesAndSecondsOba(millis) {
   }
 }
 
+function formatTimeHHMMA(date) {
+  function minFormat(n){return (n<10?'0':'')+n}
+  var h = date.getHours();
+  return (h%12 || 12) + ':' + 
+      minFormat(date.getMinutes()) + ' ' + (h<12? 'AM' :'PM');
+}
+
 /**
  * Sends the completion signal for an arrivals request on specific bus, starts
  * the request for the next bus in the busArray
@@ -267,17 +274,13 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
 
     var arrivalCode = 's';
 
-    var scheduled_string =
-      (new Date(scheduledArrivalTime)).toLocaleTimeString('en-US',
-        { hour12: true, hour: "numeric", minute: "numeric"});
-    var predicted_string = "n/a"; //scheduled_string;
+    var scheduled_string = formatTimeHHMMA(new Date(scheduledArrivalTime));
+    var predicted_string = "n/a";
 
     if(predictedArrivalTime !== undefined && predictedArrivalTime !== 0) {
       arrivalTime = predictedArrivalTime;
       var schedule_difference = predictedArrivalTime - scheduledArrivalTime;
-      predicted_string =
-        (new Date(predictedArrivalTime)).toLocaleTimeString('en-US',
-          { hour12: true, hour: "numeric", minute: "numeric"});
+      predicted_string = formatTimeHHMMA(new Date(predictedArrivalTime));
 
       // set arrival status
       if(schedule_difference > 60000) {
