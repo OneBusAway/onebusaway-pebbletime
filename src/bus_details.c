@@ -171,7 +171,7 @@ static void InitTextLayers() {
 #ifdef PBL_RECT
   uint padding = 6;
   uint w = bounds.size.w - padding*2;
-  uint label_width = 64;
+  uint label_width = 68;
   uint content_width = w - label_width;
   uint label_height = 22;
   s_content.card_one.header = text_layer_create(
@@ -345,13 +345,9 @@ static void SetTextStrings() {
   //    stop_size);
   
   // set color of the s_content.card_one.status
-  GColor status_background = ArrivalColor(s_content.arrival);
-  GColor status_foreground = GColorWhite;
-  if(gcolor_equal(status_background, GColorLightGray)) {
-    status_foreground = GColorBlack;
-  }
-  text_layer_set_background_color(s_content.card_one.status, status_background);
-  text_layer_set_text_color(s_content.card_one.status, status_foreground);
+  ArrivalColors status = ArrivalColor(s_content.arrival);
+  text_layer_set_background_color(s_content.card_one.status, status.background);
+  text_layer_set_text_color(s_content.card_one.status, status.foreground);
 }
 
 static Layer* GetFirstCardLayer(const GRect bounds) {

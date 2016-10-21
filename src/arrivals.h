@@ -1,8 +1,15 @@
 #ifndef ARRIVALS_H
 #define ARRIVALS_H
 
+#include <pebble.h>
 #include "buses.h"
 #include "memlist.h"
+
+typedef struct ArrivalsColor {
+  GColor foreground;
+  GColor background;
+  GColor boarder;
+} ArrivalColors;
 
 typedef struct Arrival {
   char* trip_id;
@@ -44,7 +51,7 @@ void ArrivalDestructor(Arrival*);
 Arrivals* ArrivalsCopy(const Arrivals*);
 void ArrivalsConstructor(Arrivals**);
 void ArrivalsDestructor(Arrivals*);
-GColor ArrivalColor(const Arrival);
+ArrivalColors ArrivalColor(const Arrival);
 const char* ArrivalText(const Arrival);
 const char* ArrivalDepartedText(const Arrival);
 const char* ArrivalPredicted(const Arrival);

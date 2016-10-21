@@ -132,25 +132,36 @@ void ArrivalsDestructor(Arrivals* arrivals) {
   MemListClear(arrivals);
 }
 
-GColor ArrivalColor(const Arrival arrival) {
+ArrivalColors ArrivalColor(const Arrival arrival) {
+  ArrivalColors retval;
   switch(arrival.arrival_code) {
     case 'e':
       // predicted early
-      return PBL_IF_COLOR_ELSE(GColorRed, GColorBlack);
+      retval.foreground = GColorWhite;
+      retval.background = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack);
+      retval.boarder = PBL_IF_COLOR_ELSE(GColorBlack, GColorWhite);
       break;
     case 'o':
       // predicted on-time
-      return PBL_IF_COLOR_ELSE(GColorDarkGreen, GColorDarkGray);
+      retval.foreground = PBL_IF_COLOR_ELSE(GColorWhite, GColorBlack);
+      retval.background = PBL_IF_COLOR_ELSE(GColorDarkGreen, GColorLightGray);
+      retval.boarder = GColorBlack;
       break;
     case 'l':
       // predicted late
-      return PBL_IF_COLOR_ELSE(GColorBlue, GColorLightGray);
+      retval.foreground = PBL_IF_COLOR_ELSE(GColorWhite, GColorBlack);
+      retval.background = PBL_IF_COLOR_ELSE(GColorBlue, GColorWhite);
+      retval.boarder = GColorBlack;
       break;
     case 's':
     default:
       // scheduled time
-      return GColorLightGray;
+      retval.foreground = GColorBlack;
+      retval.background = GColorLightGray;
+      retval.boarder = GColorBlack;
+      break;
   }
+  return retval;
 }
 
 const char* ArrivalText(const Arrival a) {

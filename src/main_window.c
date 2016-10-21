@@ -7,6 +7,7 @@
 #include "error_window.h"
 #include "manage_stops.h"
 #include "radius_window.h"
+#include "arrivals.h"
 
 static Window *s_main_window;
 static MenuLayer *s_menu_layer;
@@ -160,7 +161,7 @@ static void DrawMenuCell(GContext* ctx,
                          const char* routeName,
                          const char* timeDelta,
                          const char* time,
-                         const GColor color,
+                         const ArrivalColors colors,
                          const char* stopInfo) {
 
   GRect bounds = layer_get_bounds(cell_layer);
@@ -227,22 +228,17 @@ static void DrawMenuCell(GContext* ctx,
                              y_offset, 
                              time_width, 
                              delta_height);
-  GColor delta_background = color;
-  GColor delta_foreground = GColorWhite;
-  if(gcolor_equal(delta_background, GColorLightGray)) {
-    delta_foreground = GColorBlack;
-  }
   
   GRect highlight_bounds = delta_bounds;
   highlight_bounds.origin.y = 2;
   highlight_bounds.size.h -= 4;
-  graphics_context_set_fill_color(ctx, delta_background);
+  graphics_context_set_fill_color(ctx, colors.background);
   graphics_context_set_stroke_width(ctx, 1);
-  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, colors.boarder);
   graphics_fill_rect(ctx, highlight_bounds, 3, GCornersAll);
   graphics_draw_round_rect(ctx, highlight_bounds, 3);
 
-  graphics_context_set_text_color(ctx, delta_foreground);
+  graphics_context_set_text_color(ctx, colors.foreground);
   graphics_draw_text(ctx, 
                      timeDelta, 
                      medium_font, 
