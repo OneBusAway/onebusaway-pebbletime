@@ -33,6 +33,7 @@ void MainWindowMarkForRefresh(AppData* appdata) {
 static void DoneLoading() {
   if(s_loading) {
     vibes_double_pulse();
+    light_enable_interaction();
   }
   s_loading = false;
 }

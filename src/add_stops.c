@@ -137,7 +137,8 @@ static void WindowLoad(Window* window) {
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
   
-  vibes_short_pulse();
+  vibes_double_pulse();
+  light_enable_interaction();
 }
 
 static void WindowUnload(Window *window) {
