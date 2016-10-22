@@ -758,6 +758,9 @@ function getNearbyStopsLocationSuccess(pos, transactionId, index, index_end, rad
         stopsJsonCache = json;
         sendStopsToPebbleJson(stopsJsonCache, transactionId, index, index_end);
       }
+      else {
+        sendEndOfStops(transactionId);
+      }
     }
   );
 }
@@ -785,6 +788,9 @@ function getRoutesForStop(stopId, transactionId) {
         }
 
         sendRoutesToPebble(routes, transactionId, 5 /*RoutesForStop*/);
+      }
+      else {
+        sendEndOfRoutes(transactionId, 5 /*RoutesForStop*/);
       }
     }
   );
@@ -852,7 +858,7 @@ Pebble.addEventListener('ready',
  */
 Pebble.addEventListener('appmessage',
   function(e) {
-  // console.log('AppMessage received: ' + JSON.stringify(e.payload));
+    // console.log('AppMessage received: ' + JSON.stringify(e.payload));
 
     switch(e.payload.AppMessage_messageType) {
       case 0: // get arrival times
@@ -875,7 +881,7 @@ Pebble.addEventListener('appmessage',
           getNearbyStops(transactionId, index, index_end, radius);
         }
         else {
-          sendStopsToPebbleJson(stopsJsonCache, transactionId, index, index_end)
+          sendStopsToPebbleJson(stopsJsonCache, transactionId, index, index_end);
         }
         break;
       case 3: // get location
