@@ -323,17 +323,18 @@ static void SendAppMessageUpdateArrivals(AppData* appdata) {
 
 void UpdateArrivals(AppData* appdata) {
   appdata->refresh_arrivals = false;
+  ArrivalsDestructor(appdata->next_arrivals);
 
   if(appdata->buses.count == 0) {
-    // reset/clear arrivals if there are no buses
-    ArrivalsDestructor(appdata->arrivals);
+    // the completion of the first GetLocation &
+    // UpdateArrivals marks the app state as being initialized
+    appdata->initialized = 
+        ((s_cached_lat != CONST_0) && (s_cached_lon != CONST_0));
 
-    // the completion of the first UpdateArrivals marks the
-    // app state as being initialized
-    appdata->initialized = true;
+    // signal the main window that we're done getting arrivals
+    MainWindowUpdateArrivals(appdata);
   }
   else {
-    ArrivalsDestructor(appdata->next_arrivals);
     SendAppMessageUpdateArrivals(appdata);
   }
 }
@@ -392,6 +393,7 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
                 "----Completed transaction id: %u",
                 (uint)s_transaction_id);
 
+        appdata->initialized = true;
         MainWindowUpdateArrivals(appdata);
       }
     }

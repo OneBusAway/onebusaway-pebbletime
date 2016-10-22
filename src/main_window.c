@@ -30,18 +30,19 @@ void MainWindowMarkForRefresh(AppData* appdata) {
   menu_layer_reload_data(s_menu_layer);
 }
 
-static void DoneLoading() {
-  if(s_loading) {
+static void DoneLoading(AppData* appdata) {
+  if(s_loading && appdata->initialized) {
     vibes_double_pulse();
     light_enable_interaction();
+    s_loading = false;
   }
-  s_loading = false;
 }
 
 static void UpdateLoadingFlag(AppData* appdata) {
-  if(!appdata->initialized || (s_loading && (appdata->buses.count > 1 && 
-     appdata->buses.filter_count > 0))) {
-    s_loading = true;
+  s_loading = !(appdata->initialized) || 
+              (s_loading && (appdata->buses.count > 0) && 
+              (appdata->buses.filter_count > 0));
+  if(s_loading) {
     APP_LOG(APP_LOG_LEVEL_ERROR, 
             "update loading flag (true): %u %u %u", 
              (uint)appdata->initialized, 
@@ -49,7 +50,6 @@ static void UpdateLoadingFlag(AppData* appdata) {
              (uint)appdata->buses.filter_count);
   }
   else {
-    s_loading = false;
     APP_LOG(APP_LOG_LEVEL_ERROR, 
             "update loading flag (false): %u %u %u", 
             (uint)appdata->initialized, 
@@ -94,16 +94,9 @@ void MainWindowUpdateArrivals(AppData* appdata) {
   BusDetailsWindowUpdate(appdata);
 #endif
   
-  // the completion of the first UpdateArrivals marks the
-  // app state as being initialized
-  appdata->initialized = true;
-
   // show the data, all arrivals are in
-  DoneLoading();
-    
-  // refresh the menu ux
-  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
-  menu_layer_reload_data(s_menu_layer);
+  DoneLoading(appdata);
+  UpdateLoadingFlag(appdata);
 }
 
 static uint16_t MenuGetNumSectionsCallback(MenuLayer *menu_layer,
@@ -528,14 +521,6 @@ static void WindowAppear(Window *window) {
   if(appdata->refresh_arrivals) {
     // returning from settings where settings have changed, update
     // the contents of the menu
-    
-    if(appdata->buses.count == 0) {
-      // if there are no buses saved, don't act like you're loading buses
-      s_loading = false;
-    }
-    else {
-      s_loading = true;
-    }
 
     // select the first item in the list when the window appears
     MenuIndex m = MenuIndex(0,0);
@@ -545,6 +530,7 @@ static void WindowAppear(Window *window) {
     UpdateArrivals(appdata);
 
     // refresh the menu
+    s_loading = true;
     UpdateLoadingFlag(appdata);
   }
   else {
@@ -574,14 +560,8 @@ void MainWindowInit(AppData* appdata) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL MAIN WINDOW");
   }
 
-  if(appdata->buses.count == 0) {
-    // if there are no buses saved, don't act like you're loading buses
-    // at launch
-    s_loading = false;
-  }
-  else {
-    s_loading = true;
-  }
+  // set the loading flag at first launch
+  s_loading = true;
 
   s_last_selected_trip_id = NULL;
 
