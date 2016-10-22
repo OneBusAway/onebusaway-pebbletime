@@ -196,6 +196,6 @@ void SettingsRoutesInit(Stop stop, Buses* buses) {
   s_window = NULL;
   s_menu_layer = NULL;
   
-  ProgressWindowPush();
+  ProgressWindowPush(NULL);
   SendAppMessageGetRoutesForStop(&s_stop);
 }

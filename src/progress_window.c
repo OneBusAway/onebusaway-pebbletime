@@ -10,6 +10,10 @@ static ProgressLayer *s_progress_layer;
 static AppTimer *s_timer;
 static int s_progress;
 
+typedef struct ProgressContext {
+  void (*exit_callback)();
+} ProgressContext;
+
 static void ProgressCallback(void *context);
 
 static void NextTimer() {
@@ -61,11 +65,11 @@ static void WindowDisappear(Window *window) {
 }
 
 static void BackSingleClickHandler(ClickRecognizerRef recognizer, void *context) {
-  // TODO: removing the ability for the progress window to be canceled.
-  // In order for this to work correctly, the initiate should provide a 
-  // callback to be invoked here to do the process cancelation for whatever
-  // was being waited on.
-  // ProgressWindowRemove();
+  ProgressContext* progress_context = (ProgressContext*)context;
+  if(progress_context != NULL) {
+    progress_context->exit_callback();
+  }
+  ProgressWindowRemove();
 }
 
 static void ClickConfigHandler(Window *window) {
@@ -73,7 +77,7 @@ static void ClickConfigHandler(Window *window) {
   window_single_click_subscribe(BUTTON_ID_BACK, BackSingleClickHandler);
 }
 
-void ProgressWindowPush() {
+void ProgressWindowPush(void (*exit_callback)()) {
   if(!s_window) {
     s_window = window_create();
     window_set_background_color(s_window, GColorLightGray);
@@ -83,13 +87,21 @@ void ProgressWindowPush() {
       .disappear = WindowDisappear,
       .unload = WindowUnload
     });
-    window_set_click_config_provider(s_window, (ClickConfigProvider) ClickConfigHandler);
+    ProgressContext* progress_context = malloc(sizeof(ProgressContext));
+    progress_context->exit_callback = exit_callback;
+    window_set_user_data(s_window, progress_context);
+    window_set_click_config_provider_with_context(
+        s_window, 
+        (ClickConfigProvider) ClickConfigHandler,
+        progress_context);
   }
   window_stack_push(s_window, true);
 }
 
 void ProgressWindowRemove() {
   if(s_window) {
+    ProgressContext* progress_context = window_get_user_data(s_window);
+    free(progress_context);
     window_stack_remove(s_window, true);
   }
 } 

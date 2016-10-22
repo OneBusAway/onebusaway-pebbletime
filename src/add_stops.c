@@ -205,6 +205,9 @@ static void SelectionChanged(struct MenuLayer *menu_layer,
   }
 }
 
+static void SettingsStopsDeinit() {
+  WindowUnload(s_window);
+}
 
 void SettingsStopsInit() {
   s_menu_layer = NULL;
@@ -219,7 +222,7 @@ void SettingsStopsInit() {
     .unload = WindowUnload,
   });
 
-  ProgressWindowPush();
+  ProgressWindowPush(SettingsStopsDeinit);
 
   // Start process of getting the stops
   StopsConstructor(&s_nearby_stops);
