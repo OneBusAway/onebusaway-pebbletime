@@ -127,17 +127,6 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
   
   APP_LOG(APP_LOG_LEVEL_ERROR, "SendAppMessageGetRoutesForStop: Sending...!");
 
-  // // clear out existing nearby stops and add the single stop
-  // StopsDestructor(&s_nearby_stops);
-  // AddStop(0 /*index*/,
-  //         stop->stop_id, 
-  //         stop->stop_name, 
-  //         stop->detail_string,
-  //         stop->lat, 
-  //         stop->lon, 
-  //         stop->direction, 
-  //         &s_nearby_stops);
-
   // clear the nearby routes
   RoutesDestructor(&s_nearby_routes);
 
@@ -424,7 +413,8 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
 
     AppData* appdata = context;
     // active transaction?
-    if(transaction_id_tuple->value->uint32 == s_transaction_id) {
+    if((transaction_id_tuple->value->uint32 == s_transaction_id) && 
+        (s_nearby_stops->memlist != NULL)) {
 
       // TODO: A better way to resolve this would be to up the transaction
       // id upon canceled transactions instead of checking to see if 
@@ -436,7 +426,7 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
 
       if(count_tuple->value->uint16 == 0) {
         // special case: no stops returned
-        SettingsStopsUpdate(s_nearby_stops, &appdata->buses);
+        AddStopsUpdate(s_nearby_stops, &appdata->buses);
       }
       else {
         double lat, lon;
@@ -457,7 +447,7 @@ static void HandleAppMessageNearbyStops(DictionaryIterator *iterator,
         APP_LOG(APP_LOG_LEVEL_INFO, "Items remaining: %u",
             (uint)items_remaining_tuple->value->uint16);
         if(items_remaining_tuple->value->uint16 == 0) {
-          SettingsStopsUpdate(s_nearby_stops, &appdata->buses);
+          AddStopsUpdate(s_nearby_stops, &appdata->buses);
         }
       }
     }
@@ -511,28 +501,8 @@ static void HandleAppMessageNearbyRoutes(
                 "kAppMessageNearbyRoutes - last route returned.");
 
         s_outstanding_requests = 0;
-
-        // get rid of the progress window and show the settings window
-        // if(appdata->show_settings) {
-          AppData* appdata = context;
-          // if(message_type == kAppMessageNearbyRoutes) {
-          //   SettingsStopsStart(s_nearby_stops, 
-          //                      s_nearby_routes, 
-          //                      &appdata->buses);
-          // }
-          // else {
-            // kAppMessageRoutesForStop
-            // Stop stop = *(Stop*)MemListGet(s_nearby_stops.memlist, 0);
-            // SettingsRoutesStart(stop, 
-            //                     s_nearby_routes, 
-            //                     &appdata->buses);
-          // }
-          
-        //   ProgressWindowRemove();
-        // }
-        // if(appdata->show_settings) {
-          SettingsRoutesUpdate(s_nearby_routes, &appdata->buses);
-        // }
+        AppData* appdata = context;
+        AddRoutesUpdate(s_nearby_routes, &appdata->buses);
       }
       else {
         AddRoute(route_id_tuple->value->cstring, 

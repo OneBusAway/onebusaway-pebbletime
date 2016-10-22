@@ -159,43 +159,47 @@ static void WindowUnload(Window *window) {
   s_window = NULL;
 }
 
-void SettingsRoutesUpdate(Routes routes, Buses* buses) {
+void AddRoutesUpdate(Routes routes, Buses* buses) {
   s_nearby_routes = routes;
   BuildFavorites(buses);
 
-  if(!s_window) {
-    s_window = window_create();
-  
-    if(s_window == NULL) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
-      ErrorWindowPush(
-        "Critical error\n\nOut of memory\n\n0x100011", 
-        true);
-      return;
-    }
-    
-    window_set_window_handlers(s_window, (WindowHandlers) {
-      .load = WindowLoad,
-      .unload = WindowUnload,
-    });
+  if(s_window) {
     window_set_user_data(s_window, buses);  
-    window_stack_push(s_window, true);  
+
+    if(!window_stack_contains_window(s_window)) {
+      window_stack_push(s_window, true);
+      ProgressWindowRemove();
+    }
+    else {
+      layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+      menu_layer_reload_data(s_menu_layer);    
+    }
   }
-  else if(s_menu_layer) {
-    window_set_user_data(s_window, buses);
-    
-    // refresh the menu
-    layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
-    menu_layer_reload_data(s_menu_layer);    
-  }
-  ProgressWindowRemove();
 }
 
-void SettingsRoutesInit(Stop stop, Buses* buses) {
+void AddRoutesProgressCancelCallback() {
+  WindowUnload(s_window);
+}
+
+void AddRoutesInit(Stop stop, Buses* buses) {
   s_stop = stop;
-  s_window = NULL;
   s_menu_layer = NULL;
+
+  s_window = window_create();
+  if(s_window == NULL) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
+    ErrorWindowPush(
+      "Critical error\n\nOut of memory\n\n0x100011", 
+      true);
+    return;
+  }
   
-  ProgressWindowPush(NULL);
+  window_set_window_handlers(s_window, (WindowHandlers) {
+    .load = WindowLoad,
+    .unload = WindowUnload,
+  });
+  
+  // Start the process of getting the routes
+  ProgressWindowPush(AddRoutesProgressCancelCallback);
   SendAppMessageGetRoutesForStop(&s_stop);
 }

@@ -82,7 +82,7 @@ static void SelectCallback(struct MenuLayer *menu_layer,
       Stop *stop = MemListGet(s_stops.memlist, 
                               cell_index->row);
       AppData* appdata = (AppData*)context;
-      SettingsRoutesInit(*stop, &appdata->buses);
+      AddRoutesInit(*stop, &appdata->buses);
     }
     else {
       // nudge - no action to take

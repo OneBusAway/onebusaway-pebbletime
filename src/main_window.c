@@ -433,7 +433,7 @@ static void SelectCallback(
         case 0:
           // Add Favorites
           if(appdata->initialized) {
-            SettingsStopsInit();
+            AddStopsInit();
           }
           else {
             ErrorWindowPush("App still loading\n\nPlease wait before entering settings", false);

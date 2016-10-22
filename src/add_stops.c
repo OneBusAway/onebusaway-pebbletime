@@ -4,6 +4,7 @@
 #include "utility.h"
 #include "progress_window.h"
 #include "communication.h"
+#include "error_window.h"
 
 static Window *s_window;
 static MenuLayer *s_menu_layer;
@@ -93,7 +94,7 @@ static void SelectCallback(struct MenuLayer *menu_layer,
     if(s_nearby_stops.total_size != 0) {
       Stop *stop = MemListGet(s_nearby_stops.memlist, 
                               cell_index->row - s_nearby_stops.index_offset);
-      SettingsRoutesInit(*stop, (Buses*)context);
+      AddRoutesInit(*stop, (Buses*)context);
     }
     else {
       // nudge - no action to take
@@ -148,7 +149,7 @@ static void WindowUnload(Window *window) {
   s_window = NULL;
 }
 
-void SettingsStopsUpdate(Stops *stops, Buses* buses) {
+void AddStopsUpdate(Stops *stops, Buses* buses) {
   // TODO: "stops" is unused, since s_nearby_stops pointer
   // got passed out and manipulated externally - buses
   // isn't even really needed either (could be passed in elsewhere)
@@ -205,15 +206,18 @@ static void SelectionChanged(struct MenuLayer *menu_layer,
   }
 }
 
-static void SettingsStopsDeinit() {
+static void AddStopsProgessWindowCancelCallback() {
   WindowUnload(s_window);
 }
 
-void SettingsStopsInit() {
+void AddStopsInit() {
   s_menu_layer = NULL;
   s_window = window_create();
   if(s_window == NULL) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "NULL WINDOW LAYER");
+    ErrorWindowPush(
+      "Critical error\n\nOut of memory\n\n0x100011", 
+      true);
     return;
   }
 
@@ -222,7 +226,7 @@ void SettingsStopsInit() {
     .unload = WindowUnload,
   });
 
-  ProgressWindowPush(SettingsStopsDeinit);
+  ProgressWindowPush(AddStopsProgessWindowCancelCallback);
 
   // Start process of getting the stops
   StopsConstructor(&s_nearby_stops);

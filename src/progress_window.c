@@ -66,9 +66,7 @@ static void WindowDisappear(Window *window) {
 
 static void BackSingleClickHandler(ClickRecognizerRef recognizer, void *context) {
   ProgressContext* progress_context = (ProgressContext*)context;
-  if(progress_context != NULL) {
-    progress_context->exit_callback();
-  }
+  progress_context->exit_callback();
   ProgressWindowRemove();
 }
 

@@ -86,7 +86,7 @@ static void ActionMenuCallback(ActionMenu* action_menu,
                                 s_content.bus.lat,
                                 s_content.bus.lon,
                                 s_content.bus.direction);
-    SettingsRoutesInit(stop, &appdata->buses);
+    AddRoutesInit(stop, &appdata->buses);
     // TODO: where does Deinit get called?
     BusDetailsWindowRemove();
   }

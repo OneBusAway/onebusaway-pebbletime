@@ -3,7 +3,7 @@
 
 #include "buses.h"
 
-void SettingsStopsUpdate(Stops* stops, Buses* buses);
-void SettingsStopsInit();
+void AddStopsUpdate(Stops* stops, Buses* buses);
+void AddStopsInit();
 
 #endif /* end of include guard: ADD_STOPS_H */
