@@ -42,7 +42,7 @@ static void ProgressLayerUpdateProc(ProgressLayer* progress_layer,
                      data->corner_radius, 
                      GCornersAll);
 
-#ifdef PBL_PLATFORM_APLITE
+#ifndef PBL_COLOR
   graphics_context_set_stroke_color(ctx, data->background_color);
   graphics_draw_rect(ctx, progress_bar);
 #endif

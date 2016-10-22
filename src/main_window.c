@@ -89,10 +89,8 @@ void MainWindowUpdateArrivals(AppData* appdata) {
   appdata->arrivals = appdata->next_arrivals;
   ArrivalsConstructor(&appdata->next_arrivals);
 
-#ifndef PBL_PLATFORM_APLITE
   // update the the bus detals window, if it's being shown
   BusDetailsWindowUpdate(appdata);
-#endif
   
   // show the data, all arrivals are in
   DoneLoading(appdata);

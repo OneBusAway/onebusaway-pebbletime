@@ -17,8 +17,6 @@ static ContentIndicator *s_indicator;
 
 static char* s_message = NULL;
 bool s_critical_error = false;
-
-#ifndef PBL_PLATFORM_APLITE
 static Layer *s_icon_layer;
 static GBitmap *s_icon_bitmap;
 
@@ -33,7 +31,6 @@ static void IconUpdateProc(Layer *layer, GContext *ctx) {
                                  .size = bitmap_bounds.size
                                });
 }
-#endif
 
 static void BackSingleClickHandler(ClickRecognizerRef recognizer, 
                                    void *context) {
@@ -107,7 +104,6 @@ static void WindowInit(Window *window) {
   uint32_t y_margin = STATUS_BAR_LAYER_HEIGHT;
   GRect bitmap_bounds = GRect(0,0,0,0);
 
-#ifndef PBL_PLATFORM_APLITE
   // icon layer
   s_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_WARNING);
   bitmap_bounds = gbitmap_get_bounds(s_icon_bitmap);
@@ -123,7 +119,6 @@ static void WindowInit(Window *window) {
   ));
   layer_set_update_proc(s_icon_layer, IconUpdateProc);
   scroll_layer_add_child(s_scroll_layer, s_icon_layer);
-#endif
 
   // text layer
   GRect max_text_bounds = PBL_IF_ROUND_ELSE(
@@ -180,10 +175,8 @@ static void WindowLoad(Window *window) {
 }
 
 static void WindowUnload(Window *window) {
-#ifndef PBL_PLATFORM_APLITE
   layer_destroy(s_icon_layer);
   gbitmap_destroy(s_icon_bitmap);
-#endif
   layer_destroy(s_indicator_up_layer);
   layer_destroy(s_indicator_down_layer);
   text_layer_destroy(s_text_layer);
