@@ -27,7 +27,7 @@ static void DrawHeaderCallback(GContext* ctx,
                                const Layer *cell_layer, 
                                uint16_t section_index, 
                                void *data) {
-  MenuCellDrawHeader(ctx, cell_layer, "Favorite Stops");
+  MenuCellDrawHeader(ctx, cell_layer, "Favorite stops");
 }
 
 static void DrawRowCallback(GContext *ctx, 

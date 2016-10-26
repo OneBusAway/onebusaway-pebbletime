@@ -216,7 +216,7 @@ function formatTimeHHMMA(date) {
   function minFormat(n){return (n<10?'0':'')+n}
   var h = date.getHours();
   return (h%12 || 12) + ':' + 
-      minFormat(date.getMinutes()) + ' ' + (h<12? 'AM' :'PM');
+      minFormat(date.getMinutes()) + (h<12? 'AM' :'PM');
 }
 
 /**

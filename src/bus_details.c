@@ -13,6 +13,7 @@ typedef struct {
   Arrival arrival;
   struct {
     TextLayer *header;
+    Layer *status_box;
     TextLayer *status;
     TextLayer *arrival_label;
     TextLayer *arrival;
@@ -136,9 +137,19 @@ static void SelectSingleClickHandler(
   ShowActionMenu((AppData*)context);
 }
 
+static void StatusBoxUpdateProc(Layer *layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(layer);
+  ArrivalColors colors = ArrivalColor(s_content.arrival);
+  graphics_context_set_fill_color(ctx, colors.background);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_context_set_stroke_color(ctx, colors.boarder);
+  graphics_fill_rect(ctx, bounds, 3, GCornersAll);
+  graphics_draw_round_rect(ctx, bounds, 3);
+}
+
 #ifdef PBL_ROUND
 static TextLayer* TextLayerCreateRound(const int r, const int y, const int h) {
-  const int padding = 6;
+  const int padding = 4;
 
   // calculate the sagitta of the arc
   int sagitta;
@@ -172,6 +183,8 @@ static void InitTextLayers() {
       GRect(padding, 0, w, 45));
   s_content.card_one.stop_details = text_layer_create(
       GRect(padding, 45, w, 35));
+  s_content.card_one.status_box =
+      layer_create(GRect(padding, 81, w, 26));
   s_content.card_one.status = text_layer_create(
       GRect(padding, 81, w, 26));
   s_content.card_one.arrival_label = text_layer_create(
@@ -201,8 +214,10 @@ static void InitTextLayers() {
   int r = bounds.size.h/2;
   s_content.card_one.header = TextLayerCreateRound(r, 2, 45); 
   s_content.card_one.stop_details = TextLayerCreateRound(r, 45, 35);
+  s_content.card_one.status_box =
+      layer_create(GRect(6, 81, bounds.size.w - 12, 26));  
   s_content.card_one.status = text_layer_create(
-      GRect(0, 81, bounds.size.w, 26));
+      GRect(6, 81, bounds.size.w - 12, 26));
   s_content.card_one.arrival_label = TextLayerCreateRound(r, 110, 22);
   s_content.card_one.arrival = TextLayerCreateRound(r, 110, 22);
   text_layer_set_background_color(s_content.card_one.arrival, GColorClear);
@@ -339,9 +354,9 @@ static void SetTextStrings() {
   //    stop_size);
   
   // set color of the s_content.card_one.status
-  ArrivalColors status = ArrivalColor(s_content.arrival);
-  text_layer_set_background_color(s_content.card_one.status, status.background);
-  text_layer_set_text_color(s_content.card_one.status, status.foreground);
+  ArrivalColors colors = ArrivalColor(s_content.arrival);
+  text_layer_set_background_color(s_content.card_one.status, GColorClear);
+  text_layer_set_text_color(s_content.card_one.status, colors.foreground);
 }
 
 static Layer* GetFirstCardLayer(const GRect bounds) {
@@ -372,7 +387,10 @@ static Layer* GetFirstCardLayer(const GRect bounds) {
                   text_layer_get_layer(s_content.card_one.header));    
   layer_add_child(ret_layer, 
                   text_layer_get_layer(s_content.card_one.stop_details));
-  layer_add_child(ret_layer, 
+  layer_set_update_proc(s_content.card_one.status_box, StatusBoxUpdateProc);
+  layer_add_child(ret_layer,
+                  s_content.card_one.status_box);
+  layer_add_child(ret_layer,
                   text_layer_get_layer(s_content.card_one.status));
   layer_add_child(ret_layer, 
                   text_layer_get_layer(s_content.card_one.arrival_label));
@@ -457,6 +475,7 @@ static void WindowUnload(Window *window) {
 //   FreeAndClearPointer((void**)&s_content.arrival);
   
   text_layer_destroy(s_content.card_one.header);
+  layer_destroy(s_content.card_one.status_box);
   text_layer_destroy(s_content.card_one.status);
   text_layer_destroy(s_content.card_one.predicted_label);
   text_layer_destroy(s_content.card_one.predicted);
