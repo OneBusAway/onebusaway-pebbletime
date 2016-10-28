@@ -2,6 +2,8 @@
 
 ![Screen Shot](/screenshots/basicdemo.gif =144x)
 
+<img src="/screenshots/basicdemo.gif" alt="Screen shot" width="144">
+
 ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_17-56-08.png?raw=true) ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_17-57-15.png?raw=true) ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_21-16-17.png?raw=true) ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_21-17-04.png?raw=true)
 
 OneBusAway for Pebble smart watches provides a OneBusAway experience tailored to the Pebble platform. This app is designed to help you figure out what bus to take as quickly and easily as possible to aid in your everyday commute.
