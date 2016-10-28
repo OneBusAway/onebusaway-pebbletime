@@ -1,6 +1,6 @@
 # OneBusAway for Pebble
 
-![Screen Shot](/screenshots/basicdemo.gif?raw=true) ![Screen Shot]
+![Screen Shot](/screenshots/basicdemo.gif?raw=true =144x)
 
 ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_17-56-08.png?raw=true) ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_17-57-15.png?raw=true) ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_21-16-17.png?raw=true) ![Screen Shot](/screenshots/pebble_screenshot_2016-07-06_21-17-04.png?raw=true)
 
@@ -17,19 +17,19 @@ OneBusAway for Pebble smart watches provides a OneBusAway experience tailored to
 1. Favorite buses from multiple nearby stops shown to the user at the same time (to help you decide which bus to go take, even if they're not at the same stop)
 
 # Usage
-At first launch, you need to add some favorite stops:
+## At first launch, you will need to add some favorite stops:
 
-![Screen Shot](/screenshots/addingfavorites.gif?raw=true)
+![Screen Shot](/screenshots/addingfavorites.gif?raw=true =144x)
 
-Data updates in real time:
+## Data updates in real time:
 
 ![Screen Shot](/screenshots/updates-fastplay.gif?raw=true)
 
-Bus details show you all you need to know about an upcoming arrival:
+## Bus details show you all you need to know about an upcoming arrival:
 
 ![Screen Shot](/screenshots/busdetails.gif?raw=true) ![Screen Shot](/screenshots/busdetails-waiting-fastplay.gif?raw=true)
 
-Settings to help customize your experience:
+## Settings to help customize your experience:
 
 ![Screen Shot](/screenshots/settings.gif?raw=true)
 - "Favorites nearby" search radius controls what arrivals are shown based on how close their stops are to your current location
