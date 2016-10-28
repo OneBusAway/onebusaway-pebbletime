@@ -12,7 +12,7 @@ OneBusAway for Pebble smart watches provides a OneBusAway experience tailored to
 ## Features
 1. At a glance, real-time arrival information for public transportation
 1. Shows to only 'favorite' stops nearby your current location
-1. Favorite buses from multiple nearby stops shown to the user at the same time (to help you decide which bus to go take, even if they're not at the same stop)
+1. Favorite buses from multiple nearby stops shown at the same time (to help you decide which bus to go take, even if they're not at the same stop)
 
 # Usage
 ## At first launch, you will need to add some favorite stops:
@@ -25,7 +25,7 @@ OneBusAway for Pebble smart watches provides a OneBusAway experience tailored to
 
 ## Bus details show you all you need to know about an upcoming arrival:
 
-<img src="/screenshots/busdetails.gif" alt="Full details about each arrival" width="144"><img src="/screenshots/busdetails-waiting-fastplay.gif" alt="Bus details update in realtime" width="144">
+<img src="/screenshots/busdetails.gif" alt="Full details about each arrival" width="144"> <img src="/screenshots/busdetails-waiting-fastplay.gif" alt="Bus details update in realtime" width="144">
 
 ## Settings to help customize your experience:
 
@@ -37,7 +37,7 @@ OneBusAway for Pebble smart watches provides a OneBusAway experience tailored to
 1. Clone this repository
 1. Install the [Pebble SDK](https://developer.pebble.com/sdk).
 1. Update `servers.js` with your OneBusAway API keys
-1. Run `pebble build` (or `pebble build -- --logging' to enable logging)
+1. Run `pebble build` (or `pebble build -- --logging` to enable logging)
 
 ## Running / Installing
 Install as normal for pebble apps (i.e. `pebble install --emulator=basalt`)
