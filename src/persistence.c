@@ -108,6 +108,10 @@ void LoadBusesFromPersistence(Buses* buses) {
      persist_exists(PERSIST_KEY_BUSES_COUNT)) {
     buses->count = persist_read_int(PERSIST_KEY_BUSES_COUNT);
     buses->data = (Bus *)malloc(sizeof(Bus)*(buses->count));
+    
+    APP_LOG(APP_LOG_LEVEL_INFO, 
+            "Reading from persistence - %u buses", 
+             (uint)buses->count);
 
     if(buses->data != NULL) {
       for(uint32_t i = 0; i < buses->count; i++) {

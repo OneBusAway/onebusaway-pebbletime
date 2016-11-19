@@ -305,7 +305,8 @@ static void SendAppMessageUpdateArrivals(AppData* appdata) {
     APP_LOG(APP_LOG_LEVEL_INFO, 
         "----Completed transaction id: %u",
         (uint)s_transaction_id);
-
+    // mark the app as initialized; 
+    appdata->initialized = true;
     MainWindowUpdateArrivals(appdata);
   }
 }
