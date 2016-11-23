@@ -1,0 +1,24 @@
+Never miss the bus again!
+
+OneBusAway serves up fresh, real-time transit information in the following regions:
+* Atlanta, Georgia
+* Rogue Valley, Oregon
+* San Diego, California
+* Seattle/Tacoma/Puget Sound, Washington
+* Tampa Bay, Florida
+* Washington, D.C.
+* York Region Transit (Canada)
+* And more to come...
+
+OneBusAway for Pebble is tailored to your watch - specifically designed to help in your everyday commute.
+
+Features:
+* Get quick access to your favorite routes
+* Only shows you the favorites you save nearby
+* See routes from multiple stops at the same time (to help you decide which bus to take, even if they're not at the same stop)
+
+- Problems with arrival times? Real-time arrival information comes from your local transit agency. Use your phone's OneBusAway app to report problems with your trip.
+
+- Problems with the Pebble app itself (e.g., crashes)? Please email us via pebble@onebusaway.org
+
+- Like hacking things? OneBusAway is open-source! Find out how you can help at http://onebusaway.org

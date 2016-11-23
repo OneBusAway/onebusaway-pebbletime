@@ -40,6 +40,10 @@ static void HandleInit(AppData* appdata) {
   MainWindowInit(appdata);
 
   CheckHeapMemory();
+
+#ifdef LOGGING_ENABLED
+  light_enable(true);
+#endif
 }
 
 static void HandleDeinit(AppData* appdata) {
