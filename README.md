@@ -1,4 +1,4 @@
-# OneBusAway for Pebble [![Join the OneBusAway chat](https://onebusaway.herokuapp.com/badge.svg)](https://onebusaway.herokuapp.com/)
+# OneBusAway for Pebble [![Build Status](https://travis-ci.org/OneBusAway/onebusaway-pebbletime.svg?branch=master)](https://travis-ci.org/OneBusAway/onebusaway-pebbletime) [![Join the OneBusAway chat](https://onebusaway.herokuapp.com/badge.svg)](https://onebusaway.herokuapp.com/)
 
 <img src="/screenshots/basicdemo.gif" alt="Full demo" width="144">
 
