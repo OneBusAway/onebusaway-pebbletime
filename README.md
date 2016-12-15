@@ -4,6 +4,8 @@
 
 OneBusAway for Pebble smart watches provides a OneBusAway experience tailored to the Pebble platform. This app is designed to help you figure out what bus to take as quickly and easily as possible to aid in your everyday commute.
 
+[<img src="http://pblweb.com/badge/58321a598c7fff9ce1000137/black/medium/" alt="Available on the Pebble App Store" height="44">](https://apps.getpebble.com/applications/58321a598c7fff9ce1000137)
+
 ## Supported Pebble Hardware
 1. Pebble Time (basalt)
 1. Pebble Time Round (chalk)
