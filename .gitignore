@@ -2,5 +2,4 @@
 .lock*
 .vscode
 build
-src/js/servers.js
 node_modules/

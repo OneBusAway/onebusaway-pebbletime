@@ -1,12 +1,6 @@
-/**
- * Requires an export from servers.js which provides a dictionary of the form:
- *  'SERVER_URL':{'key':API_KEY, 'lat':LATITUDE, 'lon':LONGITUDE}
-*/
-
 // import API keys
-var servers = require('./servers').servers;
 var OBA_SERVER = '';
-var OBA_API_KEY = '';
+var OBA_API_KEY = '48d59e79-ed33-4be0-9db3-912f8f521fec';
 
 // import test data
 // TODO: don't make this a 'require' find a better way to do test 'hooks'
@@ -55,24 +49,55 @@ function DistanceBetween(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * Sets the global OBA_SERVER and OBA_API_KEY vars to that of the closest
- * server to (lat, lon)
+ * Get the OBA regions via the regions API
  */
-function setObaServerByLocation(lat, lon) {
+function setObaServerAndSendLocation(lat, lon) {
+  var url = 'http://regions.onebusaway.org/regions-v3.json';
+  xhrRequest(url, 'GET',
+    function(responseText) {
+      var json = JSON.parse(responseText);
+      if(json.data !== null && json.data.hasOwnProperty("list")) {
+        var regions = json.data.list;
+        setRegion(regions, lat, lon);
+      }
+    }
+  )
+}
+
+/**
+ * Get the distance from a location and the closest bound in a region
+ */
+function getRegionDistance(region, lat, lon) {
   var distance = -1;
-  for(var server in servers) {
-    var server_distance = DistanceBetween(lat,
-                                          lon,
-                                          servers[server].lat,
-                                          servers[server].lon);
-    console.log(server + " distance: " + server_distance);
-    if((distance == -1) || (server_distance < distance)) {
-      distance = server_distance;
-      OBA_SERVER = server;
-      OBA_API_KEY = servers[server].key;
+  for(b in region.bounds) {
+    var bound = region.bounds[b];
+    var bound_distance = DistanceBetween(lat, lon, bound.lat, bound.lon);
+    if((distance == -1) || (bound_distance < distance)) {
+      distance = bound_distance;
+    } 
+  }
+  return distance;
+}
+
+/**
+ * Sets the global OBA_SERVER and OBA_API_KEY vars to that of the closest
+ * region server to (lat, lon)
+ */
+function setRegion(regions, lat, lon) {
+  var distance = -1;
+  for(var r in regions) {
+    var region_distance = getRegionDistance(regions[r], lat, lon);
+    if((distance == -1) || (region_distance < distance)) {
+      distance = region_distance;
+      OBA_SERVER = regions[r].obaBaseUrl;
     }
   }
+
+  // TODO: consider storing the last known OBA_SERVER and restoring it
+  // here in case the regions API isn't working...
   console.log("Setting OBA server: " + OBA_SERVER);
+  
+  getLocationSuccess(lat, lon);
 }
 
 /** Convert a decimal value to a C-compatible 'double' byte array */
@@ -667,45 +692,15 @@ function buildRoutesList(json) {
 /**
  * sends the current GPS coordinates to the watch
  */
-// TODO: convert to the sendAppMessage function - this is redundant
-function getLocationSuccess(attempts, pos) {
-  if(attempts < APP_MESSAGE_MAX_ATTEMPTS) {
-    var lat = pos.coords.latitude;
-    var lon = pos.coords.longitude;
+function getLocationSuccess(lat, lon) {
+  var dictionary = {
+    'AppMessage_lat': DecimalToDoubleByteArray(lat),
+    'AppMessage_lon': DecimalToDoubleByteArray(lon),
+    'AppMessage_messageType': 3 // location
+  };
 
-    // test code: set gps coords
-    if(typeof test_lat !== 'undefined' && typeof test_lon !== 'undefined') {
-      lat = test_lat;
-      lon = test_lon;
-    }
-
-    var dictionary = {
-      'AppMessage_lat': DecimalToDoubleByteArray(lat),
-      'AppMessage_lon': DecimalToDoubleByteArray(lon),
-      'AppMessage_messageType': 3 // location
-    };
-
-    console.log('getLocationSuccess: sending - ' + lat + ',' + lon);
-
-    // Send to Pebble
-    Pebble.sendAppMessage(dictionary,
-      function(e) {
-        console.log('getLocationSuccess: send success');
-      },
-      function(e) {
-        console.log('getLocationSuccess: Error @ attempt: ' + attempts);
-
-        // reset data for next attempt
-        attempts += 1;
-        setTimeout(function() {
-          getLocationSuccess(attempts, pos);
-          }, APP_MESSAGE_TIMEOUT*attempts);
-      }
-    );
-  }
-  else {
-    console.log("getLocationSuccess: Failed sending AppMessage. Bailing.");
-  }
+  sendAppMessage(dictionary, 
+    function(e) { console.log('getLocationSuccess: send success'); });
 }
 
 /**
@@ -811,8 +806,7 @@ function getLocation() {
           lon = test_lon;
         }
 
-        setObaServerByLocation(lat, lon);
-        getLocationSuccess(0, pos);
+        setObaServerAndSendLocation(lat, lon);
       },
       function(e) {
         console.log("Error requesting location!");
