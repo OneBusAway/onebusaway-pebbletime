@@ -26,6 +26,7 @@ void AddArrival(const char* stop_id,
                 const char* arrival_string,
                 const int32_t arrival_delta,
                 const char arrival_code,
+                const bool is_arrival,
                 const Buses* buses,
                 Arrivals* arrivals) {
 
@@ -41,7 +42,8 @@ void AddArrival(const char* stop_id,
                                     arrival_string, 
                                     arrival_delta, 
                                     index, 
-                                    arrival_code);
+                                    arrival_code,
+                                    is_arrival);
 
   int16_t pos = -1;
   for(int16_t i = 0; i < MemListCount(arrivals); i++) {
@@ -72,7 +74,8 @@ Arrival ArrivalConstructor(const char* trip_id,
                            const char* delta_string, 
                            const int32_t delta, 
                            const uint8_t bus_index,
-                           const char arrival_code) {
+                           const char arrival_code,
+                           const bool is_arrival) {
                               
   Arrival arrival;
   int l = strlen(trip_id);
@@ -90,6 +93,7 @@ Arrival ArrivalConstructor(const char* trip_id,
   arrival.delta = delta;
   arrival.bus_index = bus_index;
   arrival.arrival_code = arrival_code;
+  arrival.is_arrival = is_arrival;
   return arrival;
 }
 
@@ -100,12 +104,14 @@ Arrival ArrivalCopy(const Arrival* arrival) {
                             arrival->delta_string, 
                             arrival->delta, 
                             arrival->bus_index, 
-                            arrival->arrival_code);
+                            arrival->arrival_code,
+                            arrival->is_arrival);
 }
 
 void ArrivalDestructor(Arrival* arrival) {
   arrival->delta = arrival->bus_index = 0;
   arrival->arrival_code = 'x';
+  arrival->is_arrival = false;
   FreeAndClearPointer((void**)&arrival->trip_id);
   FreeAndClearPointer((void**)&arrival->scheduled_arrival);
   FreeAndClearPointer((void**)&arrival->predicted_arrival);
@@ -182,11 +188,21 @@ const char* ArrivalText(const Arrival a) {
 }
 
 const char* ArrivalDepartedText(const Arrival arrival) {
-  if(arrival.delta >= 0) {
-    return "Arrives in:";
+  if(arrival.is_arrival) {
+    if(arrival.delta >= 0) {
+      return "Arrives in:";
+    }
+    else {
+      return "Arrived:";
+    }
   }
   else {
-    return "Departed:";
+    if(arrival.delta >= 0) {
+      return "Departs in:";
+    }
+    else {
+      return "Departed:";
+    }
   }
 }
 

@@ -48,7 +48,8 @@
       "AppMessage_arrivalDeltaString": 20,
       "AppMessage_index": 21,
       "AppMessage_count": 22,
-      "AppMessage_radius": 23
+      "AppMessage_radius": 23,
+      "AppMessage_isArrival": 24
     },
     "enableMultiJS": true,
     "displayName": "OneBusAway",

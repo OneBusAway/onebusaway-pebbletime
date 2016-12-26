@@ -338,6 +338,7 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
   Tuple *scheduled_tuple = dict_find(iterator, kAppMessageScheduled);
   Tuple *predicted_tuple = dict_find(iterator, kAppMessagePredicted);
   Tuple *arrivalCode_tuple = dict_find(iterator, kAppMessageArrivalCode);
+  Tuple *is_arrival_tuple = dict_find(iterator, kAppMessageIsArrival);
   Tuple *arrival_delta_string_tuple = dict_find(iterator, 
       kAppMessageArrivalDeltaString);
   Tuple *transaction_id_tuple = dict_find(iterator, kAppMessageTransactionId);
@@ -348,7 +349,7 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
   if(stop_id_tuple && route_id_tuple && arrival_delta_tuple &&
      scheduled_tuple && predicted_tuple && arrivalCode_tuple &&
      arrival_delta_string_tuple && transaction_id_tuple && 
-     items_remaining_tuple && trip_id_tuple) {
+     items_remaining_tuple && trip_id_tuple && is_arrival_tuple) {
 
     AppData* appdata = context;
 
@@ -372,6 +373,7 @@ static void HandleAppMessageArrivalTime(DictionaryIterator *iterator,
                    arrival_delta_string_tuple->value->cstring,
                    arrival_delta_tuple->value->int32,
                    *(arrivalCode_tuple->value->cstring),
+                   (bool)is_arrival_tuple->value->int8,
                    &appdata->buses,
                    appdata->next_arrivals);
         // APP_LOG(APP_LOG_LEVEL_INFO, "Items remaining: %u",

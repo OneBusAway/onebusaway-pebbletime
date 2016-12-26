@@ -52,6 +52,7 @@ function DistanceBetween(lat1, lon1, lat2, lon2) {
  * Get the OBA regions via the regions API
  */
 function setObaServerAndSendLocation(lat, lon) {
+  // Send request to OneBusAway
   var url = 'http://regions.onebusaway.org/regions-v3.json';
   xhrRequest(url, 'GET',
     function(responseText) {
@@ -261,6 +262,7 @@ function completeArrivalsRequest(busArray, transactionId) {
     'AppMessage_arrivalCode': 's',
     'AppMessage_scheduled': "",
     'AppMessage_predicted': "",
+    'AppMessage_isArrival': false,
     'AppMessage_messageType': 0 // arrival time
   };
 
@@ -292,10 +294,18 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
   // or, the transaction has not been canceled
   if(arrival && arrival.routeId && (arrival.routeId == routeId) &&
      (transactionId == currentTransaction)) {
-    var arrivalDelta = 0;
-    var arrivalTime = 0;
+    var displayDelta = 0;
+    var displayTime = 0;
+
+    // choose between arrival & departure times
     var scheduledArrivalTime = arrival.scheduledArrivalTime;
     var predictedArrivalTime = arrival.predictedArrivalTime;
+    var isArrival = true;
+    if(arrival.stopSequence === 0) {
+      isArrival = false;
+      scheduledArrivalTime = arrival.scheduledDepartureTime;
+      predictedArrivalTime = arrival.predictedDepartureTime;
+    }
 
     var arrivalCode = 's';
 
@@ -303,7 +313,7 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
     var predicted_string = "n/a";
 
     if(predictedArrivalTime !== undefined && predictedArrivalTime !== 0) {
-      arrivalTime = predictedArrivalTime;
+      displayTime = predictedArrivalTime;
       var schedule_difference = predictedArrivalTime - scheduledArrivalTime;
       predicted_string = formatTimeHHMMA(new Date(predictedArrivalTime));
 
@@ -320,24 +330,25 @@ function getNextArrival(bus, busArray, arrivals, currentTime, transactionId) {
     }
     else {
       // arrival time is unknown
-      arrivalTime = scheduledArrivalTime;
+      displayTime = scheduledArrivalTime;
     }
 
-    arrivalDelta = arrivalTime - currentTime;
+    displayDelta = displayTime - currentTime;
 
     // data to send back to watch
     var dictionary = {
       'AppMessage_stopId': stopId,
       'AppMessage_routeId': routeId,
       'AppMessage_tripId': arrival.tripId,
-      'AppMessage_arrivalDelta': arrivalDelta,
+      'AppMessage_arrivalDelta': displayDelta,
       'AppMessage_arrivalDeltaString':
-          millisToMinutesAndSecondsOba(arrivalDelta),
+          millisToMinutesAndSecondsOba(displayDelta),
       'AppMessage_itemsRemaining': 1,
       'AppMessage_transactionId': transactionId,
       'AppMessage_arrivalCode': arrivalCode,
       'AppMessage_scheduled': scheduled_string,
       'AppMessage_predicted': predicted_string,
+      'AppMessage_isArrival': isArrival,
       'AppMessage_messageType': 0 // arrival time
     };
 

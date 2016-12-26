@@ -19,6 +19,7 @@ typedef struct Arrival {
   int32_t delta;
   uint8_t bus_index;
   char arrival_code;
+  bool is_arrival;
 } __attribute__((__packed__)) Arrival;
 
 typedef MemList Arrivals;
@@ -36,7 +37,8 @@ void AddArrival(const char* stop_id,
                 const char* predicted_string, 
                 const char* arrival_string,
                 const int32_t arrival_delta, 
-                const char arrival_code, 
+                const char arrival_code,
+                const bool is_arrival,
                 const Buses* buses,
                 Arrivals* arrival);
 Arrival ArrivalConstructor(const char* trip_id, 
@@ -45,7 +47,8 @@ Arrival ArrivalConstructor(const char* trip_id,
                            const char* delta_string, 
                            const int32_t delta, 
                            const uint8_t bus_index, 
-                           const char arrival_code);
+                           const char arrival_code,
+                           const bool is_arrival);
 Arrival ArrivalCopy(const Arrival*);
 void ArrivalDestructor(Arrival*);
 Arrivals* ArrivalsCopy(const Arrivals*);

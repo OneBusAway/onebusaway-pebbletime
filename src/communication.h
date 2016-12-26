@@ -33,7 +33,8 @@ enum AppMessageKeys {
   kAppMessageArrivalDeltaString,
   kAppMessageIndex,
   kAppMessageCount,
-  kAppMessageRadius
+  kAppMessageRadius,
+  kAppMessageIsArrival
 };
 
 // Enumerations for kAppMessageMessageType
