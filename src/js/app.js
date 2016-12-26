@@ -186,7 +186,7 @@ function xhrRequest(url, type, callback) {
   }
 
   function xhrRequestDo() {
-    // console.log('xhrRequest: starting ' + url);
+    console.log('xhrRequest URL: ' + url);
     var xhr = new XMLHttpRequest();
     xhr.timeout = HTTP_REQUEST_TIMEOUT*(attempts+1);
     xhr.onload = function () {
@@ -684,17 +684,19 @@ function buildRoutesList(json) {
     routes = json.data.references.routes;
   }
   else {
-    var routehash = {};
-    var stops = json.data.stops;
-    for(var i = 0; i < stops.length; i++) {
-      for(var r = 0; r < stops[i].routes.length; r++) {
-        var route = stops[i].routes[r];
-        routehash[route.id] = route;
-      }
-    }
-    for(r in routehash) {
-      routes.push(routehash[r]);
-    }
+    // New York (MTA) special case
+    routes = json.data.routes;
+  //   var routehash = {};
+  //   var stops = json.data.stops;
+  //   for(var i = 0; i < stops.length; i++) {
+  //     for(var r = 0; r < stops[i].routes.length; r++) {
+  //       var route = stops[i].routes[r];
+  //       routehash[route.id] = route;
+  //     }
+  //   }
+  //   for(r in routehash) {
+  //     routes.push(routehash[r]);
+  //   }
   }
   console.log(routes);
   return routes;
@@ -783,21 +785,8 @@ function getRoutesForStop(stopId, transactionId) {
     function(responseText) {
       // responseText contains a JSON object
       var json = JSON.parse(responseText);
-      var routes;
-      if(json.data !== null) {
-        if(json.data.hasOwnProperty('references')) {
-          routes = json.data.references.routes;
-        }
-        else {
-          // New York (MTA) special case
-          routes = buildRoutesList(json);
-        }
-
-        sendRoutesToPebble(routes, transactionId, 5 /*RoutesForStop*/);
-      }
-      else {
-        sendEndOfRoutes(transactionId, 5 /*RoutesForStop*/);
-      }
+      var routes = buildRoutesList(json);
+      sendRoutesToPebble(routes, transactionId, 5 /*RoutesForStop*/);
     }
   );
 }
