@@ -38,7 +38,6 @@ OneBusAway for Pebble smart watches provides a OneBusAway experience tailored to
 ## Building
 1. Clone this repository
 1. Install the [Pebble SDK](https://developer.pebble.com/sdk).
-1. Update `servers.js` with your OneBusAway API keys
 1. Run `pebble build` (or `pebble build -- --logging` to enable logging)
 
 Important note about building - because this project uses a custom `wscript` file to compile correctly for ARM/math-sll, the project will not build on [CloudPebble](https://cloudpebble.net).
