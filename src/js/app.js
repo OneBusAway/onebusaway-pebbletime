@@ -22,6 +22,7 @@ var HTTP_REQUEST_TIMEOUT = 7500;
 
 var arrivalsJsonCache = {};
 var stopsJsonCache = {};
+var regionsJsonCache;
 var currentTransaction = -1;
 
 /** Extend Number object with method to convert numeric degrees to radians */
@@ -48,21 +49,34 @@ function DistanceBetween(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+function setObaServerAndSendLocation(args) {
+  // TODO: consider storing the last known OBA_SERVER and restoring it
+  // here in case the regions API isn't working...
+  OBA_SERVER = args['url'];
+  console.log("Setting OBA server: " + OBA_SERVER);
+  getLocationSuccess(args['lat'], args['lon']);
+}
+
 /**
  * Get the OBA regions via the regions API
  */
-function setObaServerAndSendLocation(lat, lon) {
+function findClosestRegion(lat, lon, callback, callbackArgs) {
   // Send request to OneBusAway
-  var url = 'http://regions.onebusaway.org/regions-v3.json';
-  xhrRequest(url, 'GET',
-    function(responseText) {
-      var json = JSON.parse(responseText);
-      if(json.data !== null && json.data.hasOwnProperty("list")) {
-        var regions = json.data.list;
-        setRegion(regions, lat, lon);
+  if(regionsJsonCache) {
+    findClosestRegionAndCallback(regionsJsonCache, lat, lon, callback, callbackArgs);
+  }
+  else {
+    var url = 'http://regions.onebusaway.org/regions-v3.json';
+    xhrRequest(url, 'GET',
+      function(responseText) {
+        var json = JSON.parse(responseText);
+        if(json.data !== null && json.data.hasOwnProperty("list")) {
+          regionsJsonCache = json.data.list;
+          findClosestRegionAndCallback(regionsJsonCache, lat, lon, callback, callbackArgs);
+        }
       }
-    }
-  )
+    )
+  }
 }
 
 /**
@@ -81,24 +95,22 @@ function getRegionDistance(region, lat, lon) {
 }
 
 /**
- * Sets the global OBA_SERVER and OBA_API_KEY vars to that of the closest
- * region server to (lat, lon)
+ * Sends the closest region's OBA url, lat, & lon to the
+ * callback
  */
-function setRegion(regions, lat, lon) {
+function findClosestRegionAndCallback(regions, lat, lon, callback, callbackArgs) {
   var distance = -1;
+  var url = '';
   for(var r in regions) {
     var region_distance = getRegionDistance(regions[r], lat, lon);
     if((distance == -1) || (region_distance < distance)) {
       distance = region_distance;
-      OBA_SERVER = regions[r].obaBaseUrl;
+      url = regions[r].obaBaseUrl;
     }
   }
 
-  // TODO: consider storing the last known OBA_SERVER and restoring it
-  // here in case the regions API isn't working...
-  console.log("Setting OBA server: " + OBA_SERVER);
-  
-  getLocationSuccess(lat, lon);
+  callbackArgs['url'] = url;
+  callback(callbackArgs);
 }
 
 /** Convert a decimal value to a C-compatible 'double' byte array */
@@ -117,6 +129,18 @@ function DecimalToDoubleByteArray(value) {
   return ret_bytes;
 }
 
+/** Convert a C-compatible 'double' byte array into a decimal value */
+function DoubleByteArrayToDecimal(value) {
+  var buffer = new ArrayBuffer(8);
+  var byteArray = new Uint8Array(buffer);
+    
+  for(var i=0; i < 8; ++i) {
+    byteArray[i] = value[i];
+  }
+
+  var floatArray = new Float64Array(buffer);
+  return floatArray[0];
+}
 
 function randomIntFromInterval(min,max) {
   return Math.floor(Math.random()*(max-min+1)+min);
@@ -698,7 +722,6 @@ function buildRoutesList(json) {
   //     routes.push(routehash[r]);
   //   }
   }
-  console.log(routes);
   return routes;
 }
 
@@ -774,10 +797,10 @@ function getNearbyStopsLocationSuccess(pos, transactionId, index, index_end, rad
 }
 
 /**
- * requests the routes for a particular stop and sends the routes to the watch
+ * callback for when a getRoutes request has provided the oba url
  */
-function getRoutesForStop(stopId, transactionId) {
-  var url = OBA_SERVER + '/api/where/stop/' + stopId +
+function getRoutesForStopCallback(args) {
+  var url = args['url'] + '/api/where/stop/' + args['stopId'] +
     '.json?key=' + OBA_API_KEY;
 
   // Send request to OneBusAway
@@ -786,9 +809,19 @@ function getRoutesForStop(stopId, transactionId) {
       // responseText contains a JSON object
       var json = JSON.parse(responseText);
       var routes = buildRoutesList(json);
-      sendRoutesToPebble(routes, transactionId, 5 /*RoutesForStop*/);
+      sendRoutesToPebble(routes, args['transactionId'], 5 /*RoutesForStop*/);
     }
   );
+}
+
+/**
+ * requests the routes for a particular stop and sends the routes to the watch
+ */
+function getRoutesForStop(stopId, lat, lon, transactionId) {
+  // find the correct OBA_SERVER to use
+  var callbackArgs = {'stopId':stopId, 'lat':lat, 'lon':lon, 
+                      'transactionId':transactionId};
+  findClosestRegion(lat, lon, getRoutesForStopCallback, callbackArgs);
 }
 
 /**
@@ -806,7 +839,8 @@ function getLocation() {
           lon = test_lon;
         }
 
-        setObaServerAndSendLocation(lat, lon);
+        var callbackArgs = {'lat':lat, 'lon':lon};
+        findClosestRegion(lat, lon, setObaServerAndSendLocation, callbackArgs);
       },
       function(e) {
         console.log("Error requesting location!");
@@ -883,8 +917,10 @@ Pebble.addEventListener('appmessage',
         break;
       case 5: // get routes for a stop
         var stopId = e.payload.AppMessage_stopId;
+        var lat = DoubleByteArrayToDecimal(e.payload.AppMessage_lat);
+        var lon = DoubleByteArrayToDecimal(e.payload.AppMessage_lon);
         currentTransaction = e.payload.AppMessage_transactionId;
-        getRoutesForStop(stopId, e.payload.AppMessage_transactionId);
+        getRoutesForStop(stopId, lat, lon, e.payload.AppMessage_transactionId);
         break;
       default:
         console.log('unknown messageType:' + e.payload.AppMessage_messageType);

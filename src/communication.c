@@ -146,6 +146,11 @@ void SendAppMessageGetRoutesForStop(Stop* stop) {
   dict_write_cstring(iterator, kAppMessageStopId, stop->stop_id);
   dict_write_uint32(iterator, kAppMessageTransactionId, s_transaction_id);
 
+  double lat = sll2dbl(stop->lat);
+  double lon = sll2dbl(stop->lon);
+  dict_write_data(iterator, kAppMessageLat, (uint8_t*)(&lat), sizeof(double));
+  dict_write_data(iterator, kAppMessageLon, (uint8_t*)(&lon), sizeof(double));
+
   // Send data
   app_message_outbox_send();  
 }
