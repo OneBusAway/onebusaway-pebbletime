@@ -24,6 +24,7 @@
 #include "error_window.h"
 #include "manage_stops.h"
 #include "radius_window.h"
+#include "about_window.h"
 #include "arrivals.h"
 
 static Window *s_main_window;
@@ -132,7 +133,7 @@ static uint16_t GetNumRowsCallback(MenuLayer *menu_layer,
       break;
     // settings
     case 1:
-      return 3;
+      return 4;
       break;
     default:
       return 0;
@@ -373,6 +374,9 @@ static void DrawRowCallback(GContext *ctx,
         case 2:
           menu_cell_basic_draw(ctx, cell_layer, "Search radius", NULL, NULL);
           break;
+        case 3:
+          menu_cell_basic_draw(ctx, cell_layer, "About", NULL, NULL);
+          break;
         default :
           APP_LOG(APP_LOG_LEVEL_ERROR, "Unknown Settings Menu Option");
           break;
@@ -471,6 +475,10 @@ static void SelectCallback(
           else {
             ErrorWindowPush("App still loading\n\nPlease wait before entering settings", false);
           }
+          break;
+        case 3:
+          // About
+          AboutWindowInit();
           break;
         default :
           APP_LOG(APP_LOG_LEVEL_ERROR, 
